@@ -520,6 +520,19 @@
 
   // Enter key on auth
   document.addEventListener('keydown', e => { if (e.key==='Enter' && document.getElementById('auth-screen').style.display!=='none') handleAuth(); });
+
+  // Expose functions to global scope (required for inline onclick handlers with type="module")
+  window.switchAuthTab = switchAuthTab;
+  window.handleAuth = handleAuth;
+  window.logout = logout;
+  window.addCustomEx = addCustomEx;
+  window.addSet = addSet;
+  window.toggleSet = toggleSet;
+  window.deleteEntry = deleteEntry;
+  window.showTab = showTab;
+  window.toggleRest = toggleRest;
+  window.resetRest = resetRest;
+  window.finishSeance = finishSeance;
 </script>
 </body>
 </html>
