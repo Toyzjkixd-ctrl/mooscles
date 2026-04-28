@@ -232,7 +232,7 @@
 
 <script>
   const { createClient } = window.supabase;
-  const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const DEFAULT_EXERCISES = ['Développé couché','Squat','Soulevé de terre','Développé épaules','Tractions','Rowing barre','Curl biceps','Extension triceps'];
   let exercises = [...DEFAULT_EXERCISES];
