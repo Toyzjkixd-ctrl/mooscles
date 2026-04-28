@@ -231,7 +231,12 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    lock: async (name, acquireTimeout, fn) => fn(),
+    flowType: 'implicit',
+  }
+});
 
   const DEFAULT_EXERCISES = ['Développé couché','Squat','Soulevé de terre','Développé épaules','Tractions','Rowing barre','Curl biceps','Extension triceps'];
   let exercises = [...DEFAULT_EXERCISES];
