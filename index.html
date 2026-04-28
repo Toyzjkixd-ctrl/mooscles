@@ -8,16 +8,6 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Mes Perfs">
   <title>Mes Perfs</title>
-  <script type="module">
-  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-  window.sb = createClient('https://wzwzmnuwvxvkbzantuxg.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6d3ptbnV3dnh2a2J6YW50dXhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczOTU4OTksImV4cCI6MjA5Mjk3MTg5OX0.U-zWJRVaWkRHyELv8mIEsttLVElz1se4HFt2FS5lP8w', {
-    auth: {
-      lock: async (name, acquireTimeout, fn) => fn(),
-    }
-  });
-  // Lance l'app après initialisation
-  window.dispatchEvent(new Event('sb-ready'));
-</script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap');
 
@@ -239,7 +229,11 @@
 
 <div class="toast" id="toast"></div>
 
-<script>
+<script type="module">
+  const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+  const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { lock: async (name, acquireTimeout, fn) => fn() }
+  });
 
   const DEFAULT_EXERCISES = ['Développé couché','Squat','Soulevé de terre','Développé épaules','Tractions','Rowing barre','Curl biceps','Extension triceps'];
   let exercises = [...DEFAULT_EXERCISES];
