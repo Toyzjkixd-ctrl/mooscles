@@ -1,91 +1,112 @@
 // ── NUTRITION ─────────────────────────────────────────────────────────────────
-import { _session, sbSelect, sbInsert, sbDelete, sbUpsert } from './supabase.js';
+import { _session, sbSelect, sbInsert, sbDelete } from './supabase.js';
 import { toast } from './main.js';
 
 // ── FOOD DATABASE ─────────────────────────────────────────────────────────────
-export const FOOD_DB = [
+export const FOOD_DB_DEFAULT = [
   // Protéines animales
   { name: 'Poulet (blanc)', unit: 'g', cal: 1.65, p: 0.31, c: 0, f: 0.036 },
   { name: 'Steak haché 5%', unit: 'g', cal: 1.21, p: 0.21, c: 0, f: 0.05 },
   { name: 'Saumon', unit: 'g', cal: 2.08, p: 0.20, c: 0, f: 0.13 },
-  { name: 'Thon (boîte)', unit: 'g', cal: 1.16, p: 0.26, c: 0, f: 0.01 },
+  { name: 'Thon (boite)', unit: 'g', cal: 1.16, p: 0.26, c: 0, f: 0.01 },
   { name: 'Cabillaud', unit: 'g', cal: 0.82, p: 0.18, c: 0, f: 0.007 },
   { name: 'Crevettes', unit: 'g', cal: 0.85, p: 0.18, c: 0.001, f: 0.006 },
-  { name: 'Oeuf entier', unit: 'pièce', cal: 78, p: 6, c: 0.6, f: 5.3 },
-  { name: 'Blanc d\'oeuf', unit: 'pièce', cal: 17, p: 3.6, c: 0.2, f: 0.06 },
-  { name: 'Jambon blanc (tranche)', unit: 'tranche', cal: 35, p: 5.5, c: 0.5, f: 1.2 },
+  { name: 'Oeuf entier', unit: 'piece', cal: 78, p: 6, c: 0.6, f: 5.3 },
+  { name: 'Blanc oeuf', unit: 'piece', cal: 17, p: 3.6, c: 0.2, f: 0.06 },
+  { name: 'Jambon blanc', unit: 'tranche', cal: 35, p: 5.5, c: 0.5, f: 1.2 },
   { name: 'Dinde (escalope)', unit: 'g', cal: 1.09, p: 0.24, c: 0, f: 0.015 },
   // Laitiers
   { name: 'Fromage blanc 0%', unit: 'g', cal: 0.45, p: 0.085, c: 0.04, f: 0.002 },
   { name: 'Skyr nature', unit: 'g', cal: 0.63, p: 0.11, c: 0.04, f: 0.002 },
   { name: 'Yaourt grec 0%', unit: 'g', cal: 0.53, p: 0.10, c: 0.035, f: 0.002 },
-  { name: 'Lait écrémé', unit: 'ml', cal: 0.35, p: 0.034, c: 0.049, f: 0.001 },
+  { name: 'Lait ecreme', unit: 'ml', cal: 0.35, p: 0.034, c: 0.049, f: 0.001 },
   { name: 'Lait entier', unit: 'ml', cal: 0.61, p: 0.032, c: 0.048, f: 0.033 },
   { name: 'Cottage cheese', unit: 'g', cal: 0.98, p: 0.113, c: 0.034, f: 0.043 },
   { name: 'Mozzarella', unit: 'g', cal: 2.54, p: 0.18, c: 0.027, f: 0.197 },
   { name: 'Parmesan', unit: 'g', cal: 3.92, p: 0.358, c: 0.032, f: 0.256 },
-  // Protéines veg & compléments
-  { name: 'Whey protéine', unit: 'g', cal: 4.0, p: 0.80, c: 0.06, f: 0.06 },
+  // Proteines veg & complements
+  { name: 'Whey proteine', unit: 'g', cal: 4.0, p: 0.80, c: 0.06, f: 0.06 },
   { name: 'Tofu nature', unit: 'g', cal: 0.76, p: 0.082, c: 0.018, f: 0.046 },
   { name: 'Edamame', unit: 'g', cal: 1.21, p: 0.118, c: 0.085, f: 0.05 },
   { name: 'Lentilles cuites', unit: 'g', cal: 1.16, p: 0.09, c: 0.2, f: 0.004 },
   { name: 'Pois chiches cuits', unit: 'g', cal: 1.64, p: 0.086, c: 0.274, f: 0.026 },
-  // Glucides / féculents
+  // Glucides / feculents
   { name: 'Riz blanc cuit', unit: 'g', cal: 1.3, p: 0.027, c: 0.283, f: 0.003 },
   { name: 'Riz complet cuit', unit: 'g', cal: 1.11, p: 0.026, c: 0.23, f: 0.009 },
-  { name: 'Pâtes cuites', unit: 'g', cal: 1.31, p: 0.05, c: 0.25, f: 0.011 },
-  { name: 'Flocons d\'avoine', unit: 'g', cal: 3.68, p: 0.131, c: 0.581, f: 0.07 },
+  { name: 'Pates cuites', unit: 'g', cal: 1.31, p: 0.05, c: 0.25, f: 0.011 },
+  { name: 'Flocons avoine', unit: 'g', cal: 3.68, p: 0.131, c: 0.581, f: 0.07 },
   { name: 'Pain complet (tranche)', unit: 'tranche', cal: 68, p: 3, c: 12, f: 1 },
   { name: 'Patate douce', unit: 'g', cal: 0.86, p: 0.016, c: 0.202, f: 0.001 },
   { name: 'Pomme de terre', unit: 'g', cal: 0.77, p: 0.02, c: 0.17, f: 0.001 },
   { name: 'Quinoa cuit', unit: 'g', cal: 1.20, p: 0.044, c: 0.215, f: 0.019 },
   { name: 'Pain de mie (tranche)', unit: 'tranche', cal: 65, p: 2.4, c: 12, f: 0.9 },
   // Fruits
-  { name: 'Banane', unit: 'pièce', cal: 90, p: 1.1, c: 23, f: 0.3 },
-  { name: 'Pomme', unit: 'pièce', cal: 72, p: 0.4, c: 19, f: 0.2 },
+  { name: 'Banane', unit: 'piece', cal: 90, p: 1.1, c: 23, f: 0.3 },
+  { name: 'Pomme', unit: 'piece', cal: 72, p: 0.4, c: 19, f: 0.2 },
   { name: 'Myrtilles', unit: 'g', cal: 0.57, p: 0.0074, c: 0.145, f: 0.003 },
   { name: 'Fraises', unit: 'g', cal: 0.32, p: 0.0067, c: 0.077, f: 0.003 },
-  { name: 'Orange', unit: 'pièce', cal: 62, p: 1.2, c: 15, f: 0.2 },
-  // Légumes
+  { name: 'Orange', unit: 'piece', cal: 62, p: 1.2, c: 15, f: 0.2 },
+  // Legumes
   { name: 'Brocoli', unit: 'g', cal: 0.34, p: 0.028, c: 0.065, f: 0.004 },
-  { name: 'Épinards', unit: 'g', cal: 0.23, p: 0.029, c: 0.036, f: 0.004 },
+  { name: 'Epinards', unit: 'g', cal: 0.23, p: 0.029, c: 0.036, f: 0.004 },
   { name: 'Haricots verts', unit: 'g', cal: 0.31, p: 0.018, c: 0.07, f: 0.001 },
   { name: 'Carotte', unit: 'g', cal: 0.41, p: 0.009, c: 0.096, f: 0.002 },
   { name: 'Courgette', unit: 'g', cal: 0.17, p: 0.012, c: 0.033, f: 0.003 },
   { name: 'Concombre', unit: 'g', cal: 0.15, p: 0.006, c: 0.036, f: 0.001 },
   // Graisses / lipides
-  { name: 'Huile d\'olive', unit: 'ml', cal: 8.8, p: 0, c: 0, f: 1 },
-  { name: 'Beurre de cacahuète', unit: 'g', cal: 5.94, p: 0.238, c: 0.2, f: 0.5 },
-  { name: 'Avocat', unit: 'pièce', cal: 240, p: 3, c: 12, f: 22 },
+  { name: 'Huile olive', unit: 'ml', cal: 8.8, p: 0, c: 0, f: 1 },
+  { name: 'Beurre cacahuete', unit: 'g', cal: 5.94, p: 0.238, c: 0.2, f: 0.5 },
+  { name: 'Avocat', unit: 'piece', cal: 240, p: 3, c: 12, f: 22 },
   { name: 'Amandes', unit: 'g', cal: 5.78, p: 0.213, c: 0.216, f: 0.493 },
   { name: 'Noix', unit: 'g', cal: 6.54, p: 0.152, c: 0.138, f: 0.654 },
 ];
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
+let FOOD_DB = [...FOOD_DB_DEFAULT];
+let customFoods = [];
+
 let todayEntries = [];
 let goals = { calories: 2500, protein: 180, carbs: 250, fat: 70 };
-let searchQuery = '';
 let selectedFood = null;
 let selectedQty = 100;
-let activeTab = 'journal'; // 'journal' | 'search' | 'goals'
+let activeTab = 'journal';
+
+// Search state in memory — prevents re-render from clearing input
+let _lastSearchValue = '';
 
 // ── LOAD / SAVE ───────────────────────────────────────────────────────────────
 export async function loadNutrition() {
   try {
-    // Load goals from localStorage
     const savedGoals = localStorage.getItem('nutri_goals');
     if (savedGoals) goals = { ...goals, ...JSON.parse(savedGoals) };
 
-    // Load today's entries from Supabase
     const today = new Date().toISOString().slice(0, 10);
-    const d = await sbSelect('nutrition_logs',
-      'user_id=eq.' + _session.user.id + '&date=eq.' + today + '&order=created_at');
-    todayEntries = d || [];
+    const [logs, customs] = await Promise.all([
+      sbSelect('nutrition_logs', 'user_id=eq.' + _session.user.id + '&date=eq.' + today + '&order=created_at'),
+      sbSelect('custom_foods', 'user_id=eq.' + _session.user.id + '&order=created_at').catch(() => []),
+    ]);
+    todayEntries = logs || [];
+    customFoods = customs || [];
+    _rebuildFoodDB();
   } catch (e) {
-    // Table might not exist yet — graceful fallback
     todayEntries = [];
+    customFoods = [];
   }
   renderNutrition();
+}
+
+function _rebuildFoodDB() {
+  const customMapped = customFoods.map(f => ({
+    name: f.name,
+    unit: f.unit,
+    cal: f.cal_per_unit,
+    p: f.p_per_unit,
+    c: f.c_per_unit,
+    f: f.f_per_unit,
+    _custom: true,
+    _id: f.id,
+  }));
+  FOOD_DB = [...customMapped, ...FOOD_DB_DEFAULT];
 }
 
 export async function addEntry(food, qty) {
@@ -95,23 +116,22 @@ export async function addEntry(food, qty) {
     date: today,
     food_name: food.name,
     quantity: qty,
-    calories: Math.round(calcPer(food.cal, food.unit, qty)),
-    protein:  +calcPer(food.p, food.unit, qty).toFixed(1),
-    carbs:    +calcPer(food.c, food.unit, qty).toFixed(1),
-    fat:      +calcPer(food.f, food.unit, qty).toFixed(1),
+    calories: Math.round(food.cal * qty),
+    protein: +(food.p * qty).toFixed(1),
+    carbs: +(food.c * qty).toFixed(1),
+    fat: +(food.f * qty).toFixed(1),
   };
   try {
     const d = await sbInsert('nutrition_logs', entry);
     todayEntries.push(d[0] || entry);
   } catch (e) {
-    // If table doesn't exist, store locally
     todayEntries.push({ ...entry, id: Date.now().toString() });
   }
   selectedFood = null;
-  searchQuery = '';
+  _lastSearchValue = '';
   activeTab = 'journal';
   renderNutrition();
-  toast('Ajouté ✓');
+  toast('Ajouté au journal ✓');
 }
 
 export async function deleteEntry(id) {
@@ -125,23 +145,98 @@ export function saveGoals(g) {
   localStorage.setItem('nutri_goals', JSON.stringify(goals));
   activeTab = 'journal';
   renderNutrition();
-  toast('Objectifs mis à jour ✓');
+  toast('Objectifs sauvegardés ✓');
 }
 
-// ── CALCULATIONS ──────────────────────────────────────────────────────────────
-function calcPer(perUnit, unit, qty) {
-  // For per-gram/ml foods, multiply qty (in g/ml)
-  // For per-piece/tranche foods, multiply qty (number of pieces)
-  return perUnit * qty;
-}
+// ── CUSTOM FOOD ───────────────────────────────────────────────────────────────
+export async function saveCustomFood() {
+  const name = document.getElementById('cf-name')?.value.trim();
+  const unit = document.getElementById('cf-unit')?.value || 'g';
+  const cal  = parseFloat(document.getElementById('cf-cal')?.value);
+  const p    = parseFloat(document.getElementById('cf-p')?.value) || 0;
+  const c    = parseFloat(document.getElementById('cf-c')?.value) || 0;
+  const f    = parseFloat(document.getElementById('cf-f')?.value) || 0;
 
-export function calcFood(food, qty) {
-  return {
-    cal: Math.round(calcPer(food.cal, food.unit, qty)),
-    p:   +calcPer(food.p, food.unit, qty).toFixed(1),
-    c:   +calcPer(food.c, food.unit, qty).toFixed(1),
-    f:   +calcPer(food.f, food.unit, qty).toFixed(1),
+  if (!name) { toast('Donne un nom a cet aliment.', true); return; }
+  if (isNaN(cal)) { toast('Saisis les calories.', true); return; }
+
+  // For g/ml: user enters per 100 → divide by 100 to store per unit
+  // For piece/tranche/etc: user enters per unit → store as-is
+  const isPerHundred = unit === 'g' || unit === 'ml';
+  const div = isPerHundred ? 100 : 1;
+
+  const food = {
+    user_id: _session.user.id,
+    name,
+    unit,
+    cal_per_unit: cal / div,
+    p_per_unit: p / div,
+    c_per_unit: c / div,
+    f_per_unit: f / div,
   };
+
+  try {
+    const d = await sbInsert('custom_foods', food);
+    const saved = d[0] || { ...food, id: Date.now().toString() };
+    customFoods.push(saved);
+    _rebuildFoodDB();
+    // Switch to search and pre-select new food
+    activeTab = 'search';
+    _lastSearchValue = name;
+    const newFood = FOOD_DB.find(x => x.name === name && x._custom);
+    if (newFood) {
+      selectedFood = newFood;
+      selectedQty = isPerHundred ? 100 : 1;
+    }
+    toast('Aliment cree ! Tu peux maintenant ajuster la quantite.', false);
+    renderNutrition();
+  } catch (e) {
+    toast('Erreur : ' + e.message, true);
+  }
+}
+
+export async function deleteCustomFood(id) {
+  if (!confirm('Supprimer cet aliment ?')) return;
+  try { await sbDelete('custom_foods', 'id=eq.' + id); } catch (e) {}
+  customFoods = customFoods.filter(f => f.id !== id);
+  _rebuildFoodDB();
+  renderNutrition();
+  toast('Aliment supprime');
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+export function renderNutrition() {
+  const container = document.getElementById('tab-nutrition');
+  if (!container) return;
+
+  const total  = totalToday();
+  const pctCal = Math.min(100, Math.round(total.cal / goals.calories * 100));
+  const pctP   = Math.min(100, Math.round(total.p   / goals.protein  * 100));
+  const pctC   = Math.min(100, Math.round(total.c   / goals.carbs    * 100));
+  const pctF   = Math.min(100, Math.round(total.f   / goals.fat      * 100));
+  const dateStr = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  container.innerHTML = `
+    <div>
+      <div class="page-title">Nutrition</div>
+      <div class="page-sub">${dateStr}</div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button class="filter-pill${activeTab==='journal'  ?' active':''}" onclick="import('./js/nutrition.js').then(m=>m.setNutriTab('journal'))">Journal</button>
+      <button class="filter-pill${activeTab==='search'   ?' active':''}" onclick="import('./js/nutrition.js').then(m=>m.setNutriTab('search'))">+ Ajouter</button>
+      <button class="filter-pill${activeTab==='add-food' ?' active':''}" onclick="import('./js/nutrition.js').then(m=>m.setNutriTab('add-food'))">Nouvel aliment</button>
+      <button class="filter-pill${activeTab==='goals'    ?' active':''}" onclick="import('./js/nutrition.js').then(m=>m.setNutriTab('goals'))">Objectifs</button>
+    </div>
+    ${activeTab === 'journal'  ? renderJournal(total, pctCal, pctP, pctC, pctF) : ''}
+    ${activeTab === 'search'   ? renderSearch() : ''}
+    ${activeTab === 'add-food' ? renderAddFood() : ''}
+    ${activeTab === 'goals'    ? renderGoals() : ''}
+    <div style="height:8px;"></div>
+  `;
+
+  if (activeTab === 'search')   bindSearchEvents();
+  if (activeTab === 'goals')    bindGoalEvents();
+  if (activeTab === 'add-food') bindAddFoodEvents();
 }
 
 function totalToday() {
@@ -153,47 +248,10 @@ function totalToday() {
   }), { cal: 0, p: 0, c: 0, f: 0 });
 }
 
-// ── RENDER ────────────────────────────────────────────────────────────────────
-export function renderNutrition() {
-  const container = document.getElementById('tab-nutrition');
-  if (!container) return;
-
-  const total = totalToday();
-  const pctCal = Math.min(100, Math.round(total.cal / goals.calories * 100));
-  const pctP   = Math.min(100, Math.round(total.p   / goals.protein  * 100));
-  const pctC   = Math.min(100, Math.round(total.c   / goals.carbs    * 100));
-  const pctF   = Math.min(100, Math.round(total.f   / goals.fat      * 100));
-
-  const dateStr = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-
-  container.innerHTML = `
-    <div>
-      <div class="page-title">Nutrition</div>
-      <div class="page-sub">${dateStr}</div>
-    </div>
-
-    <!-- TABS -->
-    <div style="display:flex;gap:6px;">
-      <button class="filter-pill${activeTab==='journal'?' active':''}" onclick="import('./js/nutrition.js').then(m=>m.setNutriTab('journal'))">Journal</button>
-      <button class="filter-pill${activeTab==='search'?' active':''}" onclick="import('./js/nutrition.js').then(m=>m.setNutriTab('search'))">+ Ajouter</button>
-      <button class="filter-pill${activeTab==='goals'?' active':''}" onclick="import('./js/nutrition.js').then(m=>m.setNutriTab('goals'))">Objectifs</button>
-    </div>
-
-    ${activeTab === 'journal' ? renderJournal(total, pctCal, pctP, pctC, pctF) : ''}
-    ${activeTab === 'search'  ? renderSearch() : ''}
-    ${activeTab === 'goals'   ? renderGoals() : ''}
-
-    <div style="height:8px;"></div>
-  `;
-
-  if (activeTab === 'search') bindSearchEvents();
-  if (activeTab === 'goals')  bindGoalEvents();
-}
-
+// ── JOURNAL ───────────────────────────────────────────────────────────────────
 function renderJournal(total, pctCal, pctP, pctC, pctF) {
   const calColor = pctCal >= 100 ? 'var(--danger)' : 'var(--accent)';
   return `
-    <!-- BIG CALORIE RING -->
     <div class="card" style="text-align:center;padding:20px 16px 16px;">
       <div style="position:relative;width:130px;height:130px;margin:0 auto 12px;">
         <svg width="130" height="130" style="transform:rotate(-90deg)">
@@ -208,34 +266,34 @@ function renderJournal(total, pctCal, pctP, pctC, pctF) {
         </div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-        ${macroMini('Protéines', total.p, goals.protein, 'g', '#4fc3f7')}
-        ${macroMini('Glucides', total.c, goals.carbs, 'g', '#ffb74d')}
-        ${macroMini('Lipides', total.f, goals.fat, 'g', '#f06292')}
+        ${macroMini('Proteines', total.p, goals.protein, 'g', '#4fc3f7')}
+        ${macroMini('Glucides',  total.c, goals.carbs,   'g', '#ffb74d')}
+        ${macroMini('Lipides',   total.f, goals.fat,     'g', '#f06292')}
       </div>
     </div>
-
-    <!-- MACRO BARS -->
     <div class="card" style="display:flex;flex-direction:column;gap:10px;">
       <div class="card-title">Macros</div>
-      ${macroBar('Protéines', total.p, goals.protein, 'g', '#4fc3f7', pctP)}
+      ${macroBar('Proteines', total.p, goals.protein, 'g', '#4fc3f7', pctP)}
       ${macroBar('Glucides',  total.c, goals.carbs,   'g', '#ffb74d', pctC)}
       ${macroBar('Lipides',   total.f, goals.fat,     'g', '#f06292', pctF)}
     </div>
-
-    <!-- JOURNAL LIST -->
     <div class="card">
-      <div class="card-header"><span class="card-title">Aujourd'hui</span><span style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;">${todayEntries.length} aliment${todayEntries.length>1?'s':''}</span></div>
-      ${todayEntries.length === 0 ? '<div class="empty" style="padding:20px 0 8px"><span>🥗</span>Aucun aliment ajouté</div>' :
-        todayEntries.map(e => `
+      <div class="card-header">
+        <span class="card-title">Aujourd'hui</span>
+        <span style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;">${todayEntries.length} aliment${todayEntries.length > 1 ? 's' : ''}</span>
+      </div>
+      ${todayEntries.length === 0
+        ? '<div class="empty" style="padding:20px 0 8px"><span>🥗</span>Aucun aliment ajoute</div>'
+        : todayEntries.map(e => `
           <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--border);">
             <div style="flex:1;min-width:0;">
               <div style="font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${e.food_name}</div>
               <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:1px;">
-                ${e.quantity}${getUnit(e.food_name)} · <span style="color:#4fc3f7">${e.protein}g P</span> · <span style="color:#ffb74d">${e.carbs}g C</span> · <span style="color:#f06292">${e.fat}g L</span>
+                ${e.quantity}${getUnitLabel(e.food_name)} &middot; <span style="color:#4fc3f7">${e.protein}g P</span> &middot; <span style="color:#ffb74d">${e.carbs}g G</span> &middot; <span style="color:#f06292">${e.fat}g L</span>
               </div>
             </div>
             <div style="font-size:13px;font-weight:600;font-family:'DM Mono',monospace;color:var(--text);flex-shrink:0;">${e.calories} kcal</div>
-            <button class="hist-del" onclick="import('./js/nutrition.js').then(m=>m.deleteEntry('${e.id}'))">✕</button>
+            <button class="hist-del" onclick="import('./js/nutrition.js').then(m=>m.deleteEntry('${e.id}'))">X</button>
           </div>`).join('')}
     </div>`;
 }
@@ -246,7 +304,7 @@ function macroMini(label, val, goal, unit, color) {
     <div style="text-align:center;">
       <div style="font-size:16px;font-weight:600;color:${color};font-family:'DM Mono',monospace;">${val.toFixed(0)}<span style="font-size:10px;font-weight:400;color:var(--text3)">${unit}</span></div>
       <div style="font-size:10px;color:var(--text3);margin:2px 0 4px;">${label}</div>
-      <div style="height:3px;background:var(--bg3);border-radius:2px;"><div style="height:3px;background:${color};border-radius:2px;width:${pct}%;transition:width 0.4s;"></div></div>
+      <div style="height:3px;background:var(--bg3);border-radius:2px;"><div style="height:3px;background:${color};border-radius:2px;width:${pct}%;"></div></div>
     </div>`;
 }
 
@@ -258,49 +316,51 @@ function macroBar(label, val, goal, unit, color, pct) {
         <span style="font-size:12px;font-family:'DM Mono',monospace;color:${color};">${val.toFixed(0)} / ${goal}${unit}</span>
       </div>
       <div style="height:6px;background:var(--bg3);border-radius:4px;overflow:hidden;">
-        <div style="height:6px;background:${color};border-radius:4px;width:${pct}%;transition:width 0.5s;"></div>
+        <div style="height:6px;background:${color};border-radius:4px;width:${pct}%;"></div>
       </div>
     </div>`;
 }
 
-function getUnit(name) {
+function getUnitLabel(name) {
   const f = FOOD_DB.find(x => x.name === name);
   if (!f) return 'g';
   if (f.unit === 'g' || f.unit === 'ml') return f.unit;
-  return ' ' + f.unit + (1 > 1 ? 's' : '');
+  return ' ' + f.unit;
 }
 
+// ── SEARCH ────────────────────────────────────────────────────────────────────
+// The key design: the input is rendered once. When the user types, ONLY the list
+// (#food-list-container) is updated — not the outer card. This prevents the
+// cursor jumping / backwards text bug on desktop.
 function renderSearch() {
-  const q = searchQuery.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  const filtered = FOOD_DB.filter(f =>
-    !q || f.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(q)
-  );
-
   if (selectedFood) {
     const food = selectedFood;
-    const qty = selectedQty;
-    const calc = calcFood(food, qty);
-    const isCountable = !['g','ml'].includes(food.unit);
+    const qty  = selectedQty;
+    const isCountable = !['g', 'ml'].includes(food.unit);
+    const calc = { cal: Math.round(food.cal * qty), p: +(food.p * qty).toFixed(1), c: +(food.c * qty).toFixed(1), f: +(food.f * qty).toFixed(1) };
     return `
-      <div class="card">
+      <div class="card" id="nutri-detail">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-          <button onclick="import('./js/nutrition.js').then(m=>m.clearFoodSelection())" style="background:transparent;border:none;color:var(--text2);font-size:20px;cursor:pointer;line-height:1;">←</button>
-          <div style="font-size:16px;font-weight:600;color:var(--text);">${food.name}</div>
+          <button id="back-to-search" style="background:transparent;border:none;color:var(--text2);font-size:20px;cursor:pointer;line-height:1;">&#8592;</button>
+          <div>
+            <div style="font-size:16px;font-weight:600;color:var(--text);">${food.name}</div>
+            ${food._custom ? '<div style="font-size:11px;color:var(--accent);margin-top:1px;">Aliment personnalise &#10022;</div>' : ''}
+          </div>
         </div>
         <div style="margin-bottom:14px;">
-          <div style="font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.8px;font-family:'DM Mono',monospace;">
-            ${isCountable ? 'Quantité (' + food.unit + 's)' : 'Quantité (' + food.unit + ')'}
+          <div style="font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.8px;font-family:\'DM Mono\',monospace;">
+            Quantite (${food.unit})
           </div>
           <div style="display:flex;align-items:center;gap:10px;">
-            <button id="qty-minus" style="width:40px;height:40px;border-radius:50%;border:0.5px solid var(--border2);background:var(--bg3);color:var(--text);font-size:20px;cursor:pointer;line-height:1;">−</button>
-            <input type="number" id="qty-input" value="${qty}" min="${isCountable?1:10}" step="${isCountable?1:10}" inputmode="decimal"
-              style="flex:1;text-align:center;font-size:22px;font-weight:600;font-family:'DM Mono',monospace;background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);padding:10px;">
+            <button id="qty-minus" style="width:40px;height:40px;border-radius:50%;border:0.5px solid var(--border2);background:var(--bg3);color:var(--text);font-size:20px;cursor:pointer;line-height:1;">&#8722;</button>
+            <input type="number" id="qty-input" value="${qty}" min="${isCountable ? 1 : 10}" step="${isCountable ? 1 : 10}" inputmode="decimal"
+              style="flex:1;text-align:center;font-size:22px;font-weight:600;font-family:\'DM Mono\',monospace;background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);padding:10px;">
             <button id="qty-plus" style="width:40px;height:40px;border-radius:50%;border:0.5px solid var(--border2);background:var(--bg3);color:var(--text);font-size:20px;cursor:pointer;line-height:1;">+</button>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px;">
+        <div id="macro-preview" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px;">
           ${qtyMacro('Calories', calc.cal, 'kcal', 'var(--accent)')}
-          ${qtyMacro('Protéines', calc.p, 'g', '#4fc3f7')}
+          ${qtyMacro('Proteines', calc.p, 'g', '#4fc3f7')}
           ${qtyMacro('Glucides', calc.c, 'g', '#ffb74d')}
           ${qtyMacro('Lipides', calc.f, 'g', '#f06292')}
         </div>
@@ -309,26 +369,65 @@ function renderSearch() {
   }
 
   return `
-    <div class="card">
-      <div class="card-header" style="margin-bottom:10px;"><span class="card-title">Base d'aliments</span></div>
-      <input type="text" id="food-search-input" value="${searchQuery}" placeholder="🔍 Rechercher un aliment..."
-        style="width:100%;background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:13px;padding:8px 12px;margin-bottom:10px;font-family:'DM Sans',sans-serif;">
-      <div style="max-height:320px;overflow-y:auto;">
-        ${filtered.length === 0 ? '<div style="padding:12px;font-size:13px;color:var(--text3);">Aucun aliment trouvé</div>' :
-          filtered.map((food, i) => `
-            <div class="ex-dropdown-item" id="food-item-${i}" style="border-radius:${i===0?'var(--radius-sm) var(--radius-sm)':'0'} 0 0;">
-              <div>
-                <div class="ex-dropdown-label">${food.name}</div>
-                <div style="font-size:11px;color:var(--text3);margin-top:1px;">${
-                  food.unit==='g'||food.unit==='ml' ? 
-                  `pour 100${food.unit} · ${Math.round(food.cal*100)} kcal · ${(food.p*100).toFixed(0)}g P` :
-                  `par ${food.unit} · ${Math.round(food.cal)} kcal · ${food.p.toFixed(0)}g P`
-                }</div>
-              </div>
-              <span style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;flex-shrink:0;">${food.unit}</span>
-            </div>`).join('')}
+    <div class="card" id="nutri-search-card">
+      <div class="card-header" style="margin-bottom:10px;">
+        <span class="card-title">Base d'aliments (${FOOD_DB.length})</span>
+        ${customFoods.length ? `<span style="font-size:11px;color:var(--accent);font-family:'DM Mono',monospace;">${customFoods.length} perso</span>` : ''}
       </div>
+      <input type="text" id="food-search-input"
+        placeholder="Rechercher un aliment..."
+        autocomplete="off"
+        style="width:100%;background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:13px;padding:8px 12px;margin-bottom:10px;font-family:'DM Sans',sans-serif;direction:ltr;unicode-bidi:normal;">
+      <div id="food-list-container" style="max-height:340px;overflow-y:auto;"></div>
     </div>`;
+}
+
+function renderFoodList(query) {
+  const container = document.getElementById('food-list-container');
+  if (!container) return;
+  const q = (query || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const filtered = FOOD_DB.filter(food =>
+    !q || food.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(q)
+  );
+  container.innerHTML = '';
+  if (!filtered.length) {
+    container.innerHTML = '<div style="padding:12px 14px;font-size:13px;color:var(--text3);">Aucun aliment trouve</div>';
+    return;
+  }
+  filtered.forEach(food => {
+    const row = document.createElement('div');
+    row.className = 'ex-dropdown-item';
+    const isPerGram = food.unit === 'g' || food.unit === 'ml';
+    const infoText = isPerGram
+      ? `pour 100${food.unit} - ${Math.round(food.cal * 100)} kcal - ${(food.p * 100).toFixed(0)}g P`
+      : `par ${food.unit} - ${Math.round(food.cal)} kcal - ${food.p.toFixed(1)}g P`;
+    row.innerHTML = `
+      <div style="flex:1;min-width:0;">
+        <div class="ex-dropdown-label" style="${food._custom ? 'color:var(--accent)' : ''}">${food.name}${food._custom ? ' *' : ''}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:1px;">${infoText}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+        <span style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;">${food.unit}</span>
+        ${food._custom ? `<button class="ex-dropdown-del" data-id="${food._id}">X</button>` : ''}
+      </div>`;
+
+    row.addEventListener('click', (e) => {
+      if (e.target.dataset.id) return;
+      _lastSearchValue = document.getElementById('food-search-input')?.value || '';
+      selectedFood = food;
+      selectedQty = isPerGram ? 100 : 1;
+      renderNutrition();
+    });
+
+    const delBtn = row.querySelector('[data-id]');
+    if (delBtn) {
+      delBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteCustomFood(food._id);
+      });
+    }
+    container.appendChild(row);
+  });
 }
 
 function qtyMacro(label, val, unit, color) {
@@ -339,21 +438,171 @@ function qtyMacro(label, val, unit, color) {
     </div>`;
 }
 
+function updateMacroPreview() {
+  if (!selectedFood) return;
+  const calc = {
+    cal: Math.round(selectedFood.cal * selectedQty),
+    p: +(selectedFood.p * selectedQty).toFixed(1),
+    c: +(selectedFood.c * selectedQty).toFixed(1),
+    f: +(selectedFood.f * selectedQty).toFixed(1),
+  };
+  const preview = document.getElementById('macro-preview');
+  if (preview) {
+    preview.innerHTML =
+      qtyMacro('Calories', calc.cal, 'kcal', 'var(--accent)') +
+      qtyMacro('Proteines', calc.p, 'g', '#4fc3f7') +
+      qtyMacro('Glucides', calc.c, 'g', '#ffb74d') +
+      qtyMacro('Lipides', calc.f, 'g', '#f06292');
+  }
+  const inp = document.getElementById('qty-input');
+  if (inp) inp.value = selectedQty;
+}
+
+function bindSearchEvents() {
+  if (selectedFood) {
+    const isCountable = !['g', 'ml'].includes(selectedFood.unit);
+    const step = isCountable ? 1 : 10;
+
+    document.getElementById('back-to-search')?.addEventListener('click', () => {
+      selectedFood = null;
+      renderNutrition();
+    });
+
+    document.getElementById('qty-minus')?.addEventListener('click', () => {
+      selectedQty = Math.max(isCountable ? 1 : 10, selectedQty - step);
+      updateMacroPreview();
+    });
+    document.getElementById('qty-plus')?.addEventListener('click', () => {
+      selectedQty += step;
+      updateMacroPreview();
+    });
+    document.getElementById('qty-input')?.addEventListener('input', (e) => {
+      selectedQty = parseFloat(e.target.value) || (isCountable ? 1 : 10);
+      updateMacroPreview();
+    });
+    document.getElementById('add-food-btn')?.addEventListener('click', () => {
+      addEntry(selectedFood, selectedQty);
+    });
+    return;
+  }
+
+  // Search panel — restore input value WITHOUT triggering re-render
+  const inp = document.getElementById('food-search-input');
+  if (inp) {
+    inp.value = _lastSearchValue;
+    renderFoodList(_lastSearchValue);
+
+    // On input: only refresh the list, never the outer container
+    inp.addEventListener('input', () => {
+      _lastSearchValue = inp.value;
+      renderFoodList(inp.value);
+    });
+
+    // Auto-focus on desktop only
+    if (window.innerWidth > 600) {
+      inp.focus();
+      inp.setSelectionRange(inp.value.length, inp.value.length);
+    }
+  }
+}
+
+// ── ADD CUSTOM FOOD ───────────────────────────────────────────────────────────
+function renderAddFood() {
+  return `
+    <div class="card">
+      <div class="card-header" style="margin-bottom:6px;"><span class="card-title">Nouvel aliment</span></div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:14px;">Ajoute un aliment personnalise a ta base.</div>
+
+      <div class="field" style="margin-bottom:10px;">
+        <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;font-family:'DM Mono',monospace;">Nom de l'aliment</label>
+        <input type="text" id="cf-name" placeholder="Ex: Crepe maison, Mon shake..."
+          style="background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;padding:10px 12px;font-family:'DM Sans',sans-serif;width:100%;">
+      </div>
+
+      <div class="field" style="margin-bottom:10px;">
+        <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;font-family:'DM Mono',monospace;">Unite de mesure</label>
+        <select id="cf-unit" style="background:var(--bg3);border:0.5px solid var(--border2);color:var(--text);font-size:13px;padding:9px 12px;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;width:100%;">
+          <option value="g">g  (entrez les valeurs pour 100g)</option>
+          <option value="ml">ml  (entrez les valeurs pour 100ml)</option>
+          <option value="piece">piece  (valeurs par piece)</option>
+          <option value="tranche">tranche  (valeurs par tranche)</option>
+          <option value="portion">portion  (valeurs par portion)</option>
+        </select>
+      </div>
+
+      <div id="cf-hint" style="font-size:12px;color:var(--accent);margin-bottom:12px;padding:8px 10px;background:var(--accent-dim);border-radius:var(--radius-sm);border:0.5px solid rgba(200,241,53,0.2);">
+        Entrez les valeurs pour 100g
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+        ${cfField('cf-cal', 'Calories (kcal)', 0)}
+        ${cfField('cf-p',   'Proteines (g)',   0)}
+        ${cfField('cf-c',   'Glucides (g)',     0)}
+        ${cfField('cf-f',   'Lipides (g)',      0)}
+      </div>
+
+      <button class="btn-primary" id="save-cf-btn">Creer l'aliment</button>
+    </div>
+
+    ${customFoods.length > 0 ? `
+    <div class="card">
+      <div class="card-header"><span class="card-title">Mes aliments (${customFoods.length})</span></div>
+      ${customFoods.map(cf => `
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--border);">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:14px;font-weight:500;color:var(--accent);">${cf.name}</div>
+            <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:1px;">
+              ${cf.unit === 'g' || cf.unit === 'ml'
+                ? `${Math.round(cf.cal_per_unit * 100)} kcal/100${cf.unit} - ${(cf.p_per_unit * 100).toFixed(0)}g P - ${(cf.c_per_unit * 100).toFixed(0)}g G - ${(cf.f_per_unit * 100).toFixed(0)}g L`
+                : `${Math.round(cf.cal_per_unit)} kcal/${cf.unit} - ${cf.p_per_unit.toFixed(1)}g P - ${cf.c_per_unit.toFixed(1)}g G - ${cf.f_per_unit.toFixed(1)}g L`}
+            </div>
+          </div>
+          <button class="hist-del" onclick="import('./js/nutrition.js').then(m=>m.deleteCustomFood('${cf.id}'))">X</button>
+        </div>`).join('')}
+    </div>` : ''}`;
+}
+
+function cfField(id, label, min) {
+  return `
+    <div class="field">
+      <label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.7px;font-family:'DM Mono',monospace;margin-bottom:4px;">${label}</label>
+      <input type="number" id="${id}" placeholder="0" min="${min}" step="0.1" inputmode="decimal" value=""
+        style="background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:15px;font-weight:600;padding:9px 10px;font-family:'DM Mono',monospace;width:100%;-moz-appearance:textfield;">
+    </div>`;
+}
+
+function bindAddFoodEvents() {
+  document.getElementById('save-cf-btn')?.addEventListener('click', saveCustomFood);
+
+  const unitSel = document.getElementById('cf-unit');
+  const hint    = document.getElementById('cf-hint');
+  if (unitSel && hint) {
+    unitSel.addEventListener('change', () => {
+      const u = unitSel.value;
+      const per100 = u === 'g' || u === 'ml';
+      hint.textContent = per100
+        ? `Entrez les valeurs pour 100${u}`
+        : `Entrez les valeurs par ${u}`;
+    });
+  }
+}
+
+// ── GOALS ─────────────────────────────────────────────────────────────────────
 function renderGoals() {
   return `
     <div class="card">
       <div class="card-header" style="margin-bottom:14px;"><span class="card-title">Mes objectifs</span></div>
-      ${goalField('goal-cal',  'Calories', goals.calories, 'kcal/jour', 1000, 5000, 50)}
-      ${goalField('goal-p',   'Protéines', goals.protein,  'g/jour',    50,   300,  5)}
-      ${goalField('goal-c',   'Glucides',  goals.carbs,    'g/jour',    50,   600,  10)}
-      ${goalField('goal-f',   'Lipides',   goals.fat,      'g/jour',    20,   200,  5)}
+      ${goalField('goal-cal', 'Calories', goals.calories, 'kcal/jour', 1000, 5000, 50)}
+      ${goalField('goal-p',   'Proteines', goals.protein, 'g/jour', 50, 300, 5)}
+      ${goalField('goal-c',   'Glucides',  goals.carbs,   'g/jour', 50, 600, 10)}
+      ${goalField('goal-f',   'Lipides',   goals.fat,     'g/jour', 20, 200, 5)}
       <button class="btn-primary" id="save-goals-btn" style="margin-top:6px;">Sauvegarder les objectifs</button>
     </div>
     <div class="card">
       <div class="card-title" style="margin-bottom:10px;">Calculateur rapide</div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:12px;">Estimation basée sur ton poids / activité</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:12px;">Estimation Mifflin-St Jeor selon ton profil</div>
       ${calcField('calc-weight', 'Poids (kg)', 75, 40, 150, 1)}
-      ${calcField('calc-age',    'Âge',        25, 15, 80,  1)}
+      ${calcField('calc-age',    'Age',        25, 15, 80,  1)}
       <div class="field" style="margin-bottom:10px;">
         <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;font-family:'DM Mono',monospace;margin-bottom:6px;">Sexe</label>
         <div style="display:flex;gap:6px;">
@@ -362,19 +611,19 @@ function renderGoals() {
         </div>
       </div>
       <div class="field" style="margin-bottom:12px;">
-        <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;font-family:'DM Mono',monospace;margin-bottom:6px;">Activité</label>
+        <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;font-family:'DM Mono',monospace;margin-bottom:6px;">Activite</label>
         <select id="calc-activity" style="background:var(--bg3);border:0.5px solid var(--border2);color:var(--text);font-size:13px;padding:9px 12px;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;width:100%;">
-          <option value="1.2">Sédentaire (peu ou pas d'exercice)</option>
-          <option value="1.375">Légèrement actif (1-3x/sem)</option>
-          <option value="1.55" selected>Modérément actif (3-5x/sem)</option>
-          <option value="1.725">Très actif (6-7x/sem)</option>
-          <option value="1.9">Extrêmement actif (pro)</option>
+          <option value="1.2">Sedentaire (peu ou pas d'exercice)</option>
+          <option value="1.375">Legerement actif (1-3x/sem)</option>
+          <option value="1.55" selected>Moderement actif (3-5x/sem)</option>
+          <option value="1.725">Tres actif (6-7x/sem)</option>
+          <option value="1.9">Extremement actif (pro)</option>
         </select>
       </div>
       <div style="display:flex;gap:6px;margin-bottom:12px;">
         <button class="filter-pill active" id="obj-maintain" onclick="import('./js/nutrition.js').then(m=>m.setObj('maintain'))">Maintien</button>
-        <button class="filter-pill" id="obj-bulk" onclick="import('./js/nutrition.js').then(m=>m.setObj('bulk'))">Prise masse</button>
-        <button class="filter-pill" id="obj-cut" onclick="import('./js/nutrition.js').then(m=>m.setObj('cut'))">Sèche</button>
+        <button class="filter-pill" id="obj-bulk"     onclick="import('./js/nutrition.js').then(m=>m.setObj('bulk'))">Prise masse</button>
+        <button class="filter-pill" id="obj-cut"      onclick="import('./js/nutrition.js').then(m=>m.setObj('cut'))">Seche</button>
       </div>
       <button class="btn-primary" id="calc-btn" style="background:var(--bg3);color:var(--text);border:0.5px solid var(--border2);">Calculer mes besoins</button>
       <div id="calc-result" style="display:none;margin-top:12px;padding:12px;background:var(--accent-dim);border-radius:var(--radius-sm);border:0.5px solid rgba(200,241,53,0.3);">
@@ -404,60 +653,6 @@ function calcField(id, label, val, min, max, step) {
     </div>`;
 }
 
-// ── EVENT BINDING (called after render) ───────────────────────────────────────
-function bindSearchEvents() {
-  const inp = document.getElementById('food-search-input');
-  if (inp) {
-    inp.focus();
-    inp.addEventListener('input', () => {
-      searchQuery = inp.value;
-      selectedFood = null;
-      renderNutrition();
-    });
-  }
-
-  // Food item clicks
-  FOOD_DB.forEach((food, i) => {
-    const el = document.getElementById('food-item-' + i);
-    if (el) el.addEventListener('click', () => {
-      selectedFood = food;
-      selectedQty = ['g','ml'].includes(food.unit) ? 100 : 1;
-      renderNutrition();
-    });
-  });
-
-  // Qty controls
-  const qtyInput = document.getElementById('qty-input');
-  if (qtyInput && selectedFood) {
-    const isCountable = !['g','ml'].includes(selectedFood.unit);
-    const step = isCountable ? 1 : 10;
-    document.getElementById('qty-minus')?.addEventListener('click', () => {
-      selectedQty = Math.max(isCountable ? 1 : 10, selectedQty - step);
-      document.getElementById('qty-input').value = selectedQty;
-      refreshQtyDisplay();
-    });
-    document.getElementById('qty-plus')?.addEventListener('click', () => {
-      selectedQty += step;
-      document.getElementById('qty-input').value = selectedQty;
-      refreshQtyDisplay();
-    });
-    qtyInput.addEventListener('input', () => {
-      selectedQty = +qtyInput.value || (isCountable ? 1 : 10);
-      refreshQtyDisplay();
-    });
-    document.getElementById('add-food-btn')?.addEventListener('click', () => {
-      addEntry(selectedFood, selectedQty);
-    });
-  }
-}
-
-function refreshQtyDisplay() {
-  if (!selectedFood) return;
-  const calc = calcFood(selectedFood, selectedQty);
-  // Re-render only the macro boxes without full re-render
-  renderNutrition();
-}
-
 let _calcSex = 'm';
 let _calcObj = 'maintain';
 let _calcResult = null;
@@ -473,10 +668,9 @@ function bindGoalEvents() {
   });
 
   document.getElementById('calc-btn')?.addEventListener('click', () => {
-    const w = +document.getElementById('calc-weight').value || 75;
-    const age = +document.getElementById('calc-age').value || 25;
+    const w   = +document.getElementById('calc-weight').value || 75;
+    const age = +document.getElementById('calc-age').value    || 25;
     const act = +document.getElementById('calc-activity').value || 1.55;
-    // Mifflin-St Jeor
     const bmr = _calcSex === 'm'
       ? 10 * w + 6.25 * 175 - 5 * age + 5
       : 10 * w + 6.25 * 162 - 5 * age - 161;
@@ -487,27 +681,35 @@ function bindGoalEvents() {
     const fat     = Math.round(w * 1);
     const carbs   = Math.round((tdee - protein * 4 - fat * 9) / 4);
     _calcResult = { calories: tdee, protein, carbs, fat };
-    const el = document.getElementById('calc-result');
     document.getElementById('calc-result-text').innerHTML =
       `<strong style="color:var(--accent);font-size:15px;">${tdee} kcal/jour</strong><br>
-       <span style="color:#4fc3f7;">Protéines : ${protein}g</span> · 
-       <span style="color:#ffb74d;">Glucides : ${carbs}g</span> · 
+       <span style="color:#4fc3f7;">Proteines : ${protein}g</span> &middot;
+       <span style="color:#ffb74d;">Glucides : ${carbs}g</span> &middot;
        <span style="color:#f06292;">Lipides : ${fat}g</span>`;
-    el.style.display = 'block';
+    document.getElementById('calc-result').style.display = 'block';
     document.getElementById('apply-calc-btn')?.addEventListener('click', () => {
       if (_calcResult) saveGoals(_calcResult);
     });
   });
 }
 
-export function setNutriTab(t) { activeTab = t; selectedFood = null; searchQuery = ''; renderNutrition(); }
-export function clearFoodSelection() { selectedFood = null; renderNutrition(); }
+// ── PUBLIC HELPERS ────────────────────────────────────────────────────────────
+export function setNutriTab(t) {
+  activeTab = t;
+  selectedFood = null;
+  if (t !== 'search') _lastSearchValue = '';
+  renderNutrition();
+}
+
 export function setSex(s) {
   _calcSex = s;
   document.getElementById('sex-m')?.classList.toggle('active', s === 'm');
   document.getElementById('sex-f')?.classList.toggle('active', s === 'f');
 }
+
 export function setObj(o) {
   _calcObj = o;
-  ['maintain','bulk','cut'].forEach(x => document.getElementById('obj-'+x)?.classList.toggle('active', x===o));
+  ['maintain', 'bulk', 'cut'].forEach(x =>
+    document.getElementById('obj-' + x)?.classList.toggle('active', x === o)
+  );
 }
