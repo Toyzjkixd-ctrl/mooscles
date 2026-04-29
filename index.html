@@ -141,7 +141,8 @@
     .header{padding:48px 20px 12px;background:var(--bg);border-bottom:0.5px solid var(--border);flex-shrink:0;}
     .header-top{display:flex;align-items:center;justify-content:space-between;}
     .app-name{font-family:'DM Mono',monospace;font-size:12px;color:var(--accent);letter-spacing:1px;}
-    .header-user{font-size:13px;font-weight:500;color:var(--text2);}
+    .header-user{font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;padding:4px 8px;border-radius:var(--radius-sm);border:0.5px solid transparent;transition:all 0.15s;}
+    .header-user:hover{color:var(--accent);border-color:rgba(200,241,53,0.3);background:var(--accent-dim);}
 
     .bottom-nav{height:var(--nav-h);background:var(--bg);border-top:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-around;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom);}
     .nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 12px;border-radius:var(--radius-sm);border:none;background:transparent;flex:1;}
@@ -248,7 +249,15 @@
     .record-bar-bg{height:3px;background:var(--bg3);border-radius:2px;margin-top:4px;}
     .record-bar{height:3px;background:var(--accent);border-radius:2px;}
 
-    .profil-section{margin-bottom:16px;}
+    /* ── PROFIL MODAL ─────────────────────────────────────────────────────── */
+    .profil-modal{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;background:var(--bg);transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.32,0.72,0,1);}
+    .profil-modal.open{transform:translateY(0);}
+    .profil-modal-header{padding:48px 20px 12px;background:var(--bg);border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;}
+    .profil-modal-back{background:transparent;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px;line-height:1;}
+    .profil-modal-title{font-size:17px;font-weight:600;color:var(--text);}
+    .profil-modal-content{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;-webkit-overflow-scrolling:touch;}
+
+    .profil-section{margin-bottom:4px;}
     .profil-section-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-family:'DM Mono',monospace;margin-bottom:8px;padding:0 4px;}
     .profil-action-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);padding:18px;display:flex;flex-direction:column;gap:12px;}
     .profil-action-title{font-size:17px;font-weight:600;color:var(--text);}
@@ -354,12 +363,74 @@
   </div>
 </div>
 
+<!-- ── PROFIL MODAL (slide-up) ─────────────────────────────────────────────── -->
+<div class="profil-modal" id="profil-modal">
+  <div class="profil-modal-header">
+    <button class="profil-modal-back" onclick="closeProfil()">←</button>
+    <div class="profil-modal-title" id="profil-modal-title">Mon profil</div>
+  </div>
+  <div class="profil-modal-content">
+    <div style="margin-bottom:4px;">
+      <div class="page-title" id="profil-name" style="font-size:20px;"></div>
+      <div class="page-sub" id="profil-email"></div>
+    </div>
+
+    <div class="profil-section">
+      <div class="profil-section-label">Apparence</div>
+      <div class="profil-action-card" style="flex-direction:row;align-items:center;justify-content:space-between;">
+        <div>
+          <div class="profil-action-title">Mode Beauf Vintage</div>
+          <div class="profil-action-desc">Thème club sportif français années 80 🥖</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="vintage-toggle" onchange="_themeMod.then(m=>m.toggleVintageMode(this.checked))">
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+      </div>
+    </div>
+
+    <div class="profil-section">
+      <div class="profil-section-label">Changer le pseudo</div>
+      <div class="profil-action-card">
+        <div>
+          <div class="profil-action-title">Ton pseudo</div>
+          <div class="profil-action-desc">Visible dans le classement et les records.</div>
+        </div>
+        <div class="field"><input type="text" id="new-username" placeholder="Nouveau pseudo..." maxlength="20"></div>
+        <button class="btn-primary" onclick="_authMod.then(m=>m.changeUsername())">Mettre à jour le pseudo</button>
+        <div class="profil-msg" id="username-msg"></div>
+      </div>
+    </div>
+
+    <div class="profil-section">
+      <div class="profil-section-label">Changer le mot de passe</div>
+      <div class="profil-action-card">
+        <div>
+          <div class="profil-action-title">Mot de passe</div>
+          <div class="profil-action-desc">Minimum 6 caractères. Requiert une connexion récente (&lt;24h).</div>
+        </div>
+        <div class="field"><label>Nouveau</label><input type="password" id="new-password" placeholder="••••••••"></div>
+        <div class="field"><label>Confirmer</label><input type="password" id="confirm-password" placeholder="••••••••"></div>
+        <button class="btn-primary" onclick="_authMod.then(m=>m.changePassword())">Mettre à jour le mot de passe</button>
+        <div class="profil-msg" id="pwd-msg"></div>
+      </div>
+    </div>
+
+    <div class="profil-section">
+      <div class="profil-section-label">Session</div>
+      <button class="btn-danger" onclick="_authMod.then(m=>m.logout())">Se déconnecter</button>
+    </div>
+    <div style="height:24px;"></div>
+  </div>
+</div>
+
 <!-- MAIN APP -->
 <div class="app" id="main-app" style="display:none">
   <div class="header">
     <div class="header-top">
       <span class="app-name" id="app-name-el">// MY MOOSCLES ARE GETTING BIGGER</span>
-      <span class="header-user" id="header-user"></span>
+      <span class="header-user" id="header-user" onclick="openProfil()" title="Mon profil"></span>
     </div>
   </div>
 
@@ -453,57 +524,9 @@
     <div id="records-list"><div class="loading">Chargement...</div></div>
   </div>
 
-  <!-- PROFIL -->
-  <div class="content hidden" id="tab-profil">
-    <div><div class="page-title" id="profil-name"></div><div class="page-sub" id="profil-email"></div></div>
-
-    <div class="profil-section">
-      <div class="profil-section-label">Apparence</div>
-      <div class="profil-action-card" style="flex-direction:row;align-items:center;justify-content:space-between;">
-        <div>
-          <div class="profil-action-title">Mode Beauf Vintage</div>
-          <div class="profil-action-desc">Thème club sportif français années 80 🥖</div>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" id="vintage-toggle" onchange="_themeMod.then(m=>m.toggleVintageMode(this.checked))">
-          <div class="toggle-track"></div>
-          <div class="toggle-thumb"></div>
-        </label>
-      </div>
-    </div>
-
-    <div class="profil-section">
-      <div class="profil-section-label">Changer le pseudo</div>
-      <div class="profil-action-card">
-        <div>
-          <div class="profil-action-title">Ton pseudo</div>
-          <div class="profil-action-desc">Visible dans le classement et les records.</div>
-        </div>
-        <div class="field"><input type="text" id="new-username" placeholder="Nouveau pseudo..." maxlength="20"></div>
-        <button class="btn-primary" onclick="_authMod.then(m=>m.changeUsername())">Mettre à jour le pseudo</button>
-        <div class="profil-msg" id="username-msg"></div>
-      </div>
-    </div>
-
-    <div class="profil-section">
-      <div class="profil-section-label">Changer le mot de passe</div>
-      <div class="profil-action-card">
-        <div>
-          <div class="profil-action-title">Mot de passe</div>
-          <div class="profil-action-desc">Minimum 6 caractères. Requiert une connexion récente (&lt;24h).</div>
-        </div>
-        <div class="field"><label>Nouveau</label><input type="password" id="new-password" placeholder="••••••••"></div>
-        <div class="field"><label>Confirmer</label><input type="password" id="confirm-password" placeholder="••••••••"></div>
-        <button class="btn-primary" onclick="_authMod.then(m=>m.changePassword())">Mettre à jour le mot de passe</button>
-        <div class="profil-msg" id="pwd-msg"></div>
-      </div>
-    </div>
-
-    <div class="profil-section">
-      <div class="profil-section-label">Session</div>
-      <button class="btn-danger" onclick="_authMod.then(m=>m.logout())">Se déconnecter</button>
-    </div>
-    <div style="height:8px;"></div>
+  <!-- NUTRITION -->
+  <div class="content hidden" id="tab-nutrition">
+    <div class="loading">Chargement...</div>
   </div>
 
   <!-- BOTTOM NAV -->
@@ -512,11 +535,29 @@
     <button class="nav-item" onclick="_mainMod.then(m=>m.showTab('historique'))" id="nav-historique"><span class="nav-icon">📋</span><span class="nav-label" id="nav-label-historique">Historique</span></button>
     <button class="nav-item" onclick="_mainMod.then(m=>m.showTab('programmes'))" id="nav-programmes"><span class="nav-icon">📂</span><span class="nav-label" id="nav-label-programmes">Programmes</span></button>
     <button class="nav-item" onclick="_mainMod.then(m=>m.showTab('records'))" id="nav-records"><span class="nav-icon">🏆</span><span class="nav-label" id="nav-label-records">Records</span></button>
-    <button class="nav-item" onclick="_mainMod.then(m=>m.showTab('profil'))" id="nav-profil"><span class="nav-icon">👤</span><span class="nav-label" id="nav-label-profil">Profil</span></button>
+    <button class="nav-item" onclick="_mainMod.then(m=>m.showTab('nutrition'))" id="nav-nutrition"><span class="nav-icon">🥗</span><span class="nav-label" id="nav-label-nutrition">Nutrition</span></button>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
+
+<script>
+  function openProfil() {
+    document.getElementById('profil-modal').classList.add('open');
+  }
+  function closeProfil() {
+    document.getElementById('profil-modal').classList.remove('open');
+  }
+  // Swipe down to close profil modal
+  (function() {
+    let startY = 0;
+    const modal = document.getElementById('profil-modal');
+    modal.addEventListener('touchstart', e => { startY = e.touches[0].clientY; }, { passive: true });
+    modal.addEventListener('touchend', e => {
+      if (e.changedTouches[0].clientY - startY > 80) closeProfil();
+    }, { passive: true });
+  })();
+</script>
 
 <!-- Module promises exposed globally so inline onclick handlers can reach them -->
 <script type="module">
