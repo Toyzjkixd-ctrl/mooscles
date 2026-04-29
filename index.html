@@ -240,6 +240,18 @@
   </div>
 </div>
 
+<!-- IMPORT PROGRAMME MODAL -->
+<div class="modal-overlay hidden" id="import-prog-modal">
+  <div class="modal-box">
+    <div class="modal-title">Importer un programme</div>
+    <div id="import-prog-preview" style="font-size:13px;color:var(--text2);"></div>
+    <div class="modal-btns">
+      <button onclick="closeImportModal()">Annuler</button>
+      <button class="primary" onclick="confirmImport()">Importer ✓</button>
+    </div>
+  </div>
+</div>
+
 <!-- EDIT PROGRAMME MODAL -->
 <div class="modal-overlay hidden" id="edit-prog-modal">
   <div class="modal-box" style="max-height:90dvh;overflow-y:auto;gap:12px;">
@@ -481,6 +493,7 @@ async function initApp(){
   await Promise.all([loadExercises(),loadProgrammes()]);
   renderExGrid();renderProgrammesList();
   if(sets.length===0)addSet();
+  checkShareHash();
 }
 
 async function logout(){clearSession();currentUsername='';showAuthScreen();}
@@ -609,9 +622,61 @@ function renderProgrammesList(){
     const exos=p.blocks||[];
     const card=document.createElement('div');card.className='prog-card';card.style.marginBottom='12px';
     let exoHTML=exos.map(b=>`<div class="prog-exo-item"><div class="prog-exo-dot"></div>${b.exercise} — ${b.sets.length} série${b.sets.length>1?'s':''} · ${b.sets[0]?.weight}kg×${b.sets[0]?.reps}</div>`).join('');
-    card.innerHTML=`<div class="prog-card-header"><div><div class="prog-card-name">${p.name}</div><div class="prog-card-meta">${exos.length} exercice${exos.length>1?'s':''}</div></div><div style="display:flex;gap:6px;align-items:center;"><button class="prog-del-btn" style="font-size:13px;color:var(--accent);border:0.5px solid rgba(200,241,53,0.3);border-radius:6px;padding:4px 8px;" onclick="openEditProgModal('${p.id}',event)">✏️</button><button class="prog-del-btn" onclick="deleteProgramme('${p.id}',event)">✕</button></div></div><div class="prog-exos-list">${exoHTML}</div><button class="prog-launch-btn" onclick="launchProgramme('${p.id}')">▶ Lancer ce programme</button>`;
+    card.innerHTML=`<div class="prog-card-header"><div><div class="prog-card-name">${p.name}</div><div class="prog-card-meta">${exos.length} exercice${exos.length>1?'s':''}</div></div><div style="display:flex;gap:6px;align-items:center;"><button class="prog-del-btn" style="font-size:13px;color:var(--text2);border:0.5px solid var(--border);border-radius:6px;padding:4px 8px;" onclick="shareProgramme('${p.id}',event)">🔗</button><button class="prog-del-btn" style="font-size:13px;color:var(--accent);border:0.5px solid rgba(200,241,53,0.3);border-radius:6px;padding:4px 8px;" onclick="openEditProgModal('${p.id}',event)">✏️</button><button class="prog-del-btn" onclick="deleteProgramme('${p.id}',event)">✕</button></div></div><div class="prog-exos-list">${exoHTML}</div><button class="prog-launch-btn" onclick="launchProgramme('${p.id}')">▶ Lancer ce programme</button>`;
     container.appendChild(card);
   });
+}
+// ── SHARE PROGRAMMES ────────────────────────────────────────────────────────────────
+function shareProgramme(id, e) {
+  e.stopPropagation();
+  const p = programmes.find(x => x.id === id);
+  if (!p) return;
+  const payload = { name: p.name, blocks: p.blocks };
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  const url = location.origin + location.pathname + '#share=' + encoded;
+  navigator.clipboard.writeText(url).then(() => toast('Lien copié ! 🔗')).catch(() => {
+    prompt('Copie ce lien :', url);
+  });
+}
+
+let _pendingImport = null;
+
+function closeImportModal() {
+  document.getElementById('import-prog-modal').classList.add('hidden');
+  _pendingImport = null;
+  history.replaceState(null, '', location.pathname); // nettoie le hash
+}
+
+async function confirmImport() {
+  if (!_pendingImport) return;
+  try {
+    const d = await sbInsert('programmes', {
+      user_id: _session.user.id,
+      name: _pendingImport.name,
+      blocks: _pendingImport.blocks
+    });
+    programmes.push(d[0]);
+    renderProgrammesList();
+    toast('Programme importé 💪');
+  } catch(e) { toast('Erreur import : ' + e.message, true); }
+  closeImportModal();
+}
+
+function checkShareHash() {
+  const hash = location.hash;
+  if (!hash.startsWith('#share=')) return;
+  try {
+    const json = decodeURIComponent(escape(atob(hash.slice(7))));
+    const payload = JSON.parse(json);
+    if (!payload.name || !Array.isArray(payload.blocks)) return;
+    _pendingImport = payload;
+    const preview = document.getElementById('import-prog-preview');
+    const exoList = payload.blocks.map(b =>
+      `<div class="prog-exo-item" style="margin:4px 0"><div class="prog-exo-dot"></div>${b.exercise} — ${b.sets.length} série${b.sets.length > 1 ? 's' : ''}</div>`
+    ).join('');
+    preview.innerHTML = `<div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px">${payload.name}</div>${exoList}`;
+    document.getElementById('import-prog-modal').classList.remove('hidden');
+  } catch(e) { /* hash invalide, on ignore */ }
 }
 
 // ── PROGRAMME BUILDER ─────────────────────────────────────────────────────────
