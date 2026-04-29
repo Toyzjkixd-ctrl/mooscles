@@ -7,6 +7,7 @@ import { addSet } from './seance.js';
 import { loadProgrammes, renderProgrammesList, activeSession, renderActiveSession, checkShareHash } from './programmes.js';
 import { renderHistory } from './history.js';
 import { renderRecords } from './records.js';
+import { loadNutrition, renderNutrition } from './nutrition.js';
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 export function toast(msg, isError = false) {
@@ -24,6 +25,7 @@ export function showTab(t) {
   document.getElementById('nav-' + t).classList.add('active');
   if (t === 'historique') renderHistory();
   if (t === 'records') renderRecords();
+  if (t === 'nutrition') renderNutrition();
   if (t === 'programmes') {
     renderProgrammesList();
     if (activeSession) {
@@ -55,6 +57,8 @@ export async function initApp() {
   // Ensure at least one set row on the free session tab
   const { sets } = await import('./seance.js');
   if (sets.length === 0) addSet();
+  // Pre-load nutrition in background
+  loadNutrition();
   checkShareHash();
 }
 
