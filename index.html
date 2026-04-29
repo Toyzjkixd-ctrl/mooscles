@@ -205,6 +205,26 @@
     .modal-btns{display:flex;gap:8px;}
     .modal-btns button{flex:1;padding:11px;border-radius:var(--radius-sm);font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;border:0.5px solid var(--border2);background:transparent;color:var(--text);}
     .modal-btns button.primary{background:var(--accent);color:var(--bg);border-color:var(--accent);}
+
+    /* PWA INSTALL BANNER */
+    .pwa-banner{position:fixed;bottom:calc(var(--nav-h) + 12px);left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:448px;background:var(--bg2);border:0.5px solid rgba(200,241,53,0.3);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:12px;z-index:90;box-shadow:0 8px 32px rgba(0,0,0,0.4);animation:slideUp 0.3s ease;}
+    .pwa-banner.hidden{display:none;}
+    @keyframes slideUp{from{opacity:0;transform:translateX(-50%) translateY(16px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+    .pwa-banner-icon{font-size:28px;flex-shrink:0;line-height:1;}
+    .pwa-banner-text{flex:1;min-width:0;}
+    .pwa-banner-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;}
+    .pwa-banner-sub{font-size:11px;color:var(--text2);line-height:1.4;}
+    .pwa-banner-sub b{color:var(--accent);}
+    .pwa-banner-actions{display:flex;flex-direction:column;gap:6px;flex-shrink:0;}
+    .pwa-install-btn{font-size:12px;font-weight:600;padding:7px 14px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:var(--bg);cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;}
+    .pwa-dismiss-btn{font-size:11px;padding:4px;background:transparent;border:none;color:var(--text3);cursor:pointer;font-family:'DM Sans',sans-serif;text-align:center;}
+    /* Profil section install */
+    .pwa-profil-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px;display:flex;align-items:center;gap:12px;}
+    .pwa-profil-icon{font-size:32px;flex-shrink:0;}
+    .pwa-profil-body{flex:1;}
+    .pwa-profil-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px;}
+    .pwa-profil-desc{font-size:12px;color:var(--text2);line-height:1.4;}
+    .pwa-profil-desc b{color:var(--accent);}
   </style>
 </head>
 <body>
@@ -379,7 +399,17 @@
         <div class="profil-msg" id="username-msg"></div>
       </div>
     </div>
-
+<div class="profil-section" id="pwa-profil-section">
+  <div class="profil-section-label">Installer l'app</div>
+  <div class="pwa-profil-card">
+    <div class="pwa-profil-icon">📲</div>
+    <div class="pwa-profil-body">
+      <div class="pwa-profil-title" id="pwa-profil-title">Ajouter à l'écran d'accueil</div>
+      <div class="pwa-profil-desc" id="pwa-profil-desc">Charge l'app sans navigateur, accès rapide comme une vraie app.</div>
+    </div>
+  </div>
+  <button class="btn-primary" id="pwa-profil-btn" onclick="triggerInstall()" style="margin-top:10px">Installer →</button>
+</div>
     <div class="profil-section">
       <div class="profil-section-label">Changer le mot de passe</div>
       <div class="profil-action-card">
@@ -410,7 +440,18 @@
     <button class="nav-item" onclick="showTab('profil')" id="nav-profil"><span class="nav-icon">👤</span><span class="nav-label">Profil</span></button>
   </div>
 </div>
-
+<!-- PWA INSTALL BANNER -->
+<div class="pwa-banner hidden" id="pwa-banner">
+  <div class="pwa-banner-icon">💪</div>
+  <div class="pwa-banner-text">
+    <div class="pwa-banner-title">Installer l'app</div>
+    <div class="pwa-banner-sub" id="pwa-banner-sub">Ajoute My Mooscles à ton écran d'accueil</div>
+  </div>
+  <div class="pwa-banner-actions">
+    <button class="pwa-install-btn" id="pwa-install-btn" onclick="triggerInstall()">Installer</button>
+    <button class="pwa-dismiss-btn" onclick="dismissPwaBanner()">Plus tard</button>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -839,6 +880,79 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementB
   if(saved?.access_token&&saved.expires_at*1000>Date.now()){_session=saved;scheduleRefresh(saved.expires_at);await loadProfile();await initApp();}
   else if(saved?.refresh_token){_session=saved;await refreshToken();if(_session?.access_token){await loadProfile();await initApp();}}
 })();
+// ── PWA INSTALL ───────────────────────────────────────────────────────────────
+let _deferredPrompt=null;
+const isIos=()=>/iphone|ipad|ipod/i.test(navigator.userAgent);
+const isInStandalone=()=>window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+const pwaKey='pwa_dismissed';
+
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();_deferredPrompt=e;
+  if(!isInStandalone()&&!sessionStorage.getItem(pwaKey)){
+    setTimeout(()=>showPwaBanner('android'),1500);
+  }
+  updatePwaProfilSection('android');
+});
+
+window.addEventListener('appinstalled',()=>{
+  _deferredPrompt=null;
+  hidePwaBanner();
+  hidePwaProfilSection();
+  toast('App installée 🎉');
+});
+
+function showPwaBanner(mode){
+  const b=document.getElementById('pwa-banner');
+  const sub=document.getElementById('pwa-banner-sub');
+  if(mode==='ios'){
+    sub.innerHTML='Tape <b>Partager</b> puis <b>"Sur l\'écran d\'accueil"</b> dans Safari';
+    document.getElementById('pwa-install-btn').textContent='Voir comment';
+    document.getElementById('pwa-install-btn').onclick=showIosInstructions;
+  }
+  b.classList.remove('hidden');
+}
+
+function hidePwaBanner(){document.getElementById('pwa-banner').classList.add('hidden');}
+function dismissPwaBanner(){sessionStorage.setItem(pwaKey,'1');hidePwaBanner();}
+
+async function triggerInstall(){
+  if(_deferredPrompt){
+    _deferredPrompt.prompt();
+    const{outcome}=await _deferredPrompt.userChoice;
+    _deferredPrompt=null;
+    hidePwaBanner();
+  } else if(isIos()){
+    showIosInstructions();
+  } else {
+    toast('Utilise le menu ⋮ > "Installer l\'application"');
+  }
+}
+
+function showIosInstructions(){
+  alert('Sur iOS Safari :\n1. Tape l\'icône 📤 Partager en bas\n2. Fais défiler et appuie sur "Sur l\'écran d\'accueil"\n3. Confirme avec "Ajouter"');
+}
+
+function updatePwaProfilSection(mode){
+  const sec=document.getElementById('pwa-profil-section');if(!sec)return;
+  if(isInStandalone()){hidePwaProfilSection();return;}
+  if(mode==='ios'){
+    document.getElementById('pwa-profil-title').textContent='Ajouter à l\'écran d\'accueil (iOS)';
+    document.getElementById('pwa-profil-desc').innerHTML='Tape <b>Partager 📤</b> dans Safari, puis <b>"Sur l\'écran d\'accueil"</b>.';
+    document.getElementById('pwa-profil-btn').textContent='Voir les étapes →';
+    document.getElementById('pwa-profil-btn').onclick=showIosInstructions;
+  }
+}
+
+function hidePwaProfilSection(){const s=document.getElementById('pwa-profil-section');if(s)s.style.display='none';}
+
+// Init PWA section on load
+(function initPwa(){
+  if(isInStandalone()){hidePwaProfilSection();return;}
+  if(isIos()&&!sessionStorage.getItem(pwaKey)){
+    setTimeout(()=>showPwaBanner('ios'),1500);
+    updatePwaProfilSection('ios');
+  }
+})();  
 </script>
 </body>
 </html>
