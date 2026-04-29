@@ -627,24 +627,26 @@ function renderProgrammesList(){
   });
 }
 // ── SHARE PROGRAMMES ────────────────────────────────────────────────────────────────
-function shareProgramme(id, e) {
+async function shareProgramme(id, e) {
   e.stopPropagation();
   const p = programmes.find(x => x.id === id);
   if (!p) return;
-  const payload = { name: p.name, blocks: p.blocks };
-  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-  const url = location.origin + location.pathname + '#share=' + encoded;
-  navigator.clipboard.writeText(url).then(() => toast('Lien copié ! 🔗')).catch(() => {
-    prompt('Copie ce lien :', url);
-  });
+  try {
+    const d = await sbInsert('shared_programmes', { name: p.name, blocks: p.blocks });
+    const shortId = d[0].id;
+    const url = location.origin + location.pathname + '#import=' + shortId;
+    navigator.clipboard.writeText(url).then(() => toast('Lien copié ! 🔗')).catch(() => {
+      prompt('Copie ce lien :', url);
+    });
+  } catch(e) { toast('Erreur partage : ' + e.message, true); }
 }
-
+  
 let _pendingImport = null;
 
 function closeImportModal() {
   document.getElementById('import-prog-modal').classList.add('hidden');
   _pendingImport = null;
-  history.replaceState(null, '', location.pathname); // nettoie le hash
+  history.replaceState(null, '', location.pathname);
 }
 
 async function confirmImport() {
@@ -662,13 +664,14 @@ async function confirmImport() {
   closeImportModal();
 }
 
-function checkShareHash() {
+async function checkShareHash() {
   const hash = location.hash;
-  if (!hash.startsWith('#share=')) return;
+  if (!hash.startsWith('#import=')) return;
+  const shortId = hash.slice(8);
   try {
-    const json = decodeURIComponent(escape(atob(hash.slice(7))));
-    const payload = JSON.parse(json);
-    if (!payload.name || !Array.isArray(payload.blocks)) return;
+    const d = await sbSelect('shared_programmes', 'id=eq.' + shortId);
+    if (!d || !d[0]) return;
+    const payload = d[0];
     _pendingImport = payload;
     const preview = document.getElementById('import-prog-preview');
     const exoList = payload.blocks.map(b =>
@@ -676,9 +679,9 @@ function checkShareHash() {
     ).join('');
     preview.innerHTML = `<div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px">${payload.name}</div>${exoList}`;
     document.getElementById('import-prog-modal').classList.remove('hidden');
-  } catch(e) { /* hash invalide, on ignore */ }
+  } catch(e) { /* id invalide, on ignore */ }
 }
-
+  
 // ── PROGRAMME BUILDER ─────────────────────────────────────────────────────────
 function addBuilderBlock(){
   builderBlocks.push({exercise:DEF_EX[0],sets:[{weight:60,reps:10},{weight:60,reps:10},{weight:60,reps:10}]});
