@@ -412,12 +412,27 @@ export function cancelActiveSession() {
 export async function finishActiveSession() {
   if (!activeSession) return;
   _syncActiveSessionFromDOM();
-  const allDone = activeSession.blocks.every(b => b.sets.some(s => s.done));
-  if (!allDone && !confirm('Certaines séries ne sont pas cochées. Valider quand même ?')) return;
+
+  // Construire les blocs à enregistrer : uniquement les séries cochées
+  const blocksToSave = activeSession.blocks
+    .map(b => ({ ...b, sets: b.sets.filter(s => s.done) }))
+    .filter(b => b.sets.length > 0);
+
+  if (!blocksToSave.length) {
+    toast('Coche au moins une série avant de valider !', true);
+    return;
+  }
+
+  const uncheckedBlocks = activeSession.blocks.filter(b => b.sets.some(s => !s.done));
+  if (uncheckedBlocks.length > 0) {
+    const names = uncheckedBlocks.map(b => b.exercise).join(', ');
+    if (!confirm(`Séries non cochées sur : ${names}\nSeules les séries cochées seront enregistrées. Continuer ?`)) return;
+  }
+
   const btn = document.getElementById('finish-active-btn');
   btn.disabled = true; btn.textContent = 'Enregistrement...';
   try {
-    await Promise.all(activeSession.blocks.map(b => {
+    await Promise.all(blocksToSave.map(b => {
       const vol = b.sets.reduce((a, s) => a + s.weight * s.reps, 0);
       const best = Math.max(...b.sets.map(s => s.weight));
       return sbInsert('sessions', { user_id: _session.user.id, exercise: b.exercise, sets: b.sets, volume: vol, best_weight: best });
