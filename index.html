@@ -298,6 +298,11 @@
     .sp-btn-open{display:flex;align-items:center;gap:6px;width:100%;padding:9px 16px;background:transparent;border:none;border-top:0.5px solid var(--border);color:var(--text3);font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;text-align:left;}
     .sp-btn-open:hover{color:var(--text2);background:var(--bg2);}
     body.vintage .sp-btn-open{font-family:'Special Elite',serif;border-color:#8B7355;}
+
+    /* ── GRAPH ── */
+    .graph-metric-btn,.graph-period-btn{font-size:11px;padding:4px 10px;border:0.5px solid var(--border);border-radius:20px;background:transparent;color:var(--text3);cursor:pointer;font-family:'DM Mono',monospace;transition:all 0.15s;}
+    .graph-metric-btn.active,.graph-period-btn.active{background:var(--accent-dim);color:var(--accent);border-color:rgba(200,241,53,0.3);}
+    body.vintage .graph-metric-btn.active,body.vintage .graph-period-btn.active{background:rgba(139,26,26,0.12);color:#8B1A1A;border-color:rgba(139,26,26,0.4);}
   </style>
 </head>
 <body>
@@ -486,6 +491,7 @@
       <div class="card-header"><span class="card-title">Filtrer</span></div>
       <div class="filter-row" id="history-filters"></div>
     </div>
+    <div class="card" id="history-graph-card" style="display:none;"></div>
     <div class="card">
       <div class="card-header"><span class="card-title" id="history-card-title">Toutes les séances</span></div>
       <div id="history-list"><div class="loading">Chargement...</div></div>
