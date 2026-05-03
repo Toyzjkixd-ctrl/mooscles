@@ -1,5 +1,5 @@
 // ── NUTRITION ─────────────────────────────────────────────────────────────────
-import { _session, sbSelect, sbInsert, sbDelete, sbUpsert } from './supabase.js';
+import { _session, sbSelect, sbInsert, sbDelete, sbUpsert, sbPatch } from './supabase.js';
 import { toast } from './main.js';
 
 // ── MEAL CONFIG ───────────────────────────────────────────────────────────────
