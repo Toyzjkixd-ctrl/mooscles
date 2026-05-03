@@ -243,10 +243,13 @@ export async function deleteEntry(id) {
 
 export async function saveGoals(g) {
   goals = g;
-  localStorage.setItem('nutri_goals', JSON.stringify(goals)); // fallback
+  localStorage.setItem('nutri_goals', JSON.stringify(goals));
   try {
     await sbUpsert('profiles', { id: _session.user.id, nutrition_goals: g }, 'id');
-  } catch (e) { /* non-bloquant */ }
+    console.log('Goals saved to Supabase ✓', g); // à supprimer après debug
+  } catch (e) {
+    console.error('saveGoals error:', e); // regarde la console
+  }
   activeTab = 'journal';
   renderNutrition();
   toast('Objectifs sauvegardés ✓');
