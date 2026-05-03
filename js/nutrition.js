@@ -1,5 +1,5 @@
 // ── NUTRITION ─────────────────────────────────────────────────────────────────
-import { _session, sbSelect, sbInsert, sbDelete } from './supabase.js';
+import { _session, sbSelect, sbInsert, sbDelete, sbUpsert } from './supabase.js';
 import { toast } from './main.js';
 
 // ── MEAL CONFIG ───────────────────────────────────────────────────────────────
@@ -123,16 +123,11 @@ function _rebuildFoodDB() {
 // ── LOAD ──────────────────────────────────────────────────────────────────────
 export async function loadNutrition() {
   try {
-    // Fallback localStorage pendant la migration
-    const savedGoals = localStorage.getItem('nutri_goals');
-    if (savedGoals) goals = { ...goals, ...JSON.parse(savedGoals) };
-
     const [customs, profileRows] = await Promise.all([
       sbSelect('custom_foods', 'user_id=eq.' + _session.user.id + '&order=created_at').catch(() => []),
       sbSelect('profiles', 'id=eq.' + _session.user.id + '&select=nutrition_goals').catch(() => []),
     ]);
     
-    // Priorité aux objectifs en base
     if (profileRows?.[0]?.nutrition_goals) {
       goals = { ...goals, ...profileRows[0].nutrition_goals };
     }
@@ -243,13 +238,9 @@ export async function deleteEntry(id) {
 
 export async function saveGoals(g) {
   goals = g;
-  localStorage.setItem('nutri_goals', JSON.stringify(goals));
   try {
     await sbUpsert('profiles', { id: _session.user.id, nutrition_goals: g }, 'id');
-    console.log('Goals saved to Supabase ✓', g); // à supprimer après debug
-  } catch (e) {
-    console.error('saveGoals error:', e); // regarde la console
-  }
+  } catch (e) {}
   activeTab = 'journal';
   renderNutrition();
   toast('Objectifs sauvegardés ✓');
