@@ -60,6 +60,8 @@ export async function initApp() {
   // Pre-load nutrition in background
   loadNutrition();
   checkShareHash();
+  // Init Spotify widget (non-bloquant)
+  import('./spotify.js').then(m => m.initSpotify());
 }
 
 // ── BOOT ──────────────────────────────────────────────────────────────────────
