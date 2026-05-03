@@ -332,9 +332,26 @@ function _renderBuilderInto(containerId, blocks, isEdit) {
 // ── ACTIVE SESSION ────────────────────────────────────────────────────────────
 export function launchProgramme(id) {
   const p = programmes.find(x => x.id === id); if (!p) return;
+  const lastPerfs = p.last_perfs || {}; // { exercise: [{weight, reps}, ...] }
   activeSession = {
+    progId: p.id,
     progName: p.name,
-    blocks: (p.blocks || []).map(b => ({ exercise: b.exercise, sets: b.sets.map(s => ({ ...s, done: false })) }))
+    blocks: (p.blocks || []).map(b => {
+      const prev = lastPerfs[b.exercise]; // tableau de séries de la dernière fois
+      return {
+        exercise: b.exercise,
+        // Pré-remplir avec les perfs réelles de la dernière fois si dispo
+        sets: b.sets.map((s, si) => ({
+          weight: prev && prev[si] != null ? prev[si].weight : s.weight,
+          reps:   prev && prev[si] != null ? prev[si].reps   : s.reps,
+          done: false
+        })),
+        // Garder les valeurs du template pour afficher "objectif"
+        targetSets: b.sets.map(s => ({ weight: s.weight, reps: s.reps })),
+        // Garder les perfs précédentes pour affichage de référence
+        prevSets: prev ? prev.map(s => ({ weight: s.weight, reps: s.reps })) : null,
+      };
+    })
   };
   renderActiveSession();
   document.getElementById('active-session-container').style.display = 'block';
@@ -359,25 +376,47 @@ export function renderActiveSession() {
     header.appendChild(nameSpan); header.appendChild(changeBtn);
 
     const table = document.createElement('table'); table.className = 'sets-table';
-    table.innerHTML = '<thead><tr><th>#</th><th>Poids kg</th><th>Reps</th><th>✓</th></tr></thead>';
+    const hasPrev = b.prevSets && b.prevSets.length > 0;
+    table.innerHTML = hasPrev
+      ? '<thead><tr><th>#</th><th>Poids kg</th><th>Reps</th><th>✓</th></tr><tr style="height:0"><th></th><th style="font-size:9px;color:var(--text3);padding-bottom:6px;font-family:\'DM Mono\',monospace;font-weight:400;letter-spacing:0.3px;" colspan="2">↑ dernière fois</th><th></th></tr></thead>'
+      : '<thead><tr><th>#</th><th>Poids kg</th><th>Reps</th><th>✓</th></tr></thead>';
     const tbody = document.createElement('tbody');
 
     b.sets.forEach((s, si) => {
       const tr = document.createElement('tr');
+      const prev = b.prevSets && b.prevSets[si];
 
-      const tdNum = document.createElement('td'); tdNum.textContent = 'S' + (si + 1);
+      const tdNum = document.createElement('td');
+      tdNum.innerHTML = `<span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text3)">S${si + 1}</span>`;
 
       const tdWeight = document.createElement('td');
       const inpWeight = document.createElement('input');
       inpWeight.type = 'number'; inpWeight.value = s.weight; inpWeight.min = 0; inpWeight.step = 0.5; inpWeight.setAttribute('inputmode', 'decimal');
       inpWeight.addEventListener('change', () => { s.weight = +inpWeight.value; });
-      tdWeight.appendChild(inpWeight);
+      // Hint perf précédente sous l'input poids
+      if (prev) {
+        const hint = document.createElement('div');
+        hint.textContent = prev.weight + 'kg';
+        hint.style.cssText = 'font-size:10px;color:var(--text3);text-align:center;margin-top:2px;font-family:\'DM Mono\',monospace;';
+        tdWeight.appendChild(inpWeight);
+        tdWeight.appendChild(hint);
+      } else {
+        tdWeight.appendChild(inpWeight);
+      }
 
       const tdReps = document.createElement('td');
       const inpReps = document.createElement('input');
       inpReps.type = 'number'; inpReps.value = s.reps; inpReps.min = 1; inpReps.step = 1; inpReps.setAttribute('inputmode', 'numeric');
       inpReps.addEventListener('change', () => { s.reps = +inpReps.value; });
-      tdReps.appendChild(inpReps);
+      if (prev) {
+        const hint = document.createElement('div');
+        hint.textContent = prev.reps + ' reps';
+        hint.style.cssText = 'font-size:10px;color:var(--text3);text-align:center;margin-top:2px;font-family:\'DM Mono\',monospace;';
+        tdReps.appendChild(inpReps);
+        tdReps.appendChild(hint);
+      } else {
+        tdReps.appendChild(inpReps);
+      }
 
       const tdCheck = document.createElement('td');
       const checkBtn = document.createElement('button');
@@ -437,6 +476,23 @@ export async function finishActiveSession() {
       const best = Math.max(...b.sets.map(s => s.weight));
       return sbInsert('sessions', { user_id: _session.user.id, exercise: b.exercise, sets: b.sets, volume: vol, best_weight: best });
     }));
+
+    // ── Sauvegarder les perfs réelles (toutes les séries, cochées ou pas) ──────
+    // last_perfs = { exerciceName: [{weight, reps}, ...] }
+    const lastPerfs = {};
+    activeSession.blocks.forEach(b => {
+      lastPerfs[b.exercise] = b.sets.map(s => ({ weight: s.weight, reps: s.reps }));
+    });
+    // Mettre à jour le programme en DB (best-effort, pas bloquant)
+    try {
+      const progIdx = programmes.findIndex(p => p.id === activeSession.progId);
+      if (progIdx >= 0) {
+        const updated = await sbPatch('programmes', 'id=eq.' + activeSession.progId, { last_perfs: lastPerfs });
+        if (updated && updated[0]) programmes[progIdx] = updated[0];
+        else programmes[progIdx].last_perfs = lastPerfs; // fallback local
+      }
+    } catch (e) { /* non-bloquant */ }
+
     activeSession = null;
     document.getElementById('active-session-container').style.display = 'none';
     document.getElementById('programmes-list-container').style.display = 'block';
