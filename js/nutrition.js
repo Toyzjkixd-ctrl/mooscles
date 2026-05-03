@@ -123,13 +123,20 @@ function _rebuildFoodDB() {
 // ── LOAD ──────────────────────────────────────────────────────────────────────
 export async function loadNutrition() {
   try {
+    // Fallback localStorage pendant la migration
     const savedGoals = localStorage.getItem('nutri_goals');
     if (savedGoals) goals = { ...goals, ...JSON.parse(savedGoals) };
-    selectedMeal = _guessMeal();
 
-    const [customs] = await Promise.all([
+    const [customs, profileRows] = await Promise.all([
       sbSelect('custom_foods', 'user_id=eq.' + _session.user.id + '&order=created_at').catch(() => []),
+      sbSelect('profiles', 'id=eq.' + _session.user.id + '&select=nutrition_goals').catch(() => []),
     ]);
+    
+    // Priorité aux objectifs en base
+    if (profileRows?.[0]?.nutrition_goals) {
+      goals = { ...goals, ...profileRows[0].nutrition_goals };
+    }
+    
     customFoods = customs || [];
     _rebuildFoodDB();
   } catch (e) {
@@ -234,9 +241,12 @@ export async function deleteEntry(id) {
   renderNutrition();
 }
 
-export function saveGoals(g) {
+export async function saveGoals(g) {
   goals = g;
-  localStorage.setItem('nutri_goals', JSON.stringify(goals));
+  localStorage.setItem('nutri_goals', JSON.stringify(goals)); // fallback
+  try {
+    await sbUpsert('profiles', { id: _session.user.id, nutrition_goals: g }, 'id');
+  } catch (e) { /* non-bloquant */ }
   activeTab = 'journal';
   renderNutrition();
   toast('Objectifs sauvegardés ✓');
