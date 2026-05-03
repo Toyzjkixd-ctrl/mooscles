@@ -576,5 +576,23 @@
   window._seanceMod = Promise.resolve(seance);
   window._progMod   = Promise.resolve(prog);
 </script>
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/mooscles/sw.js")
+      .then(reg => {
+        // Quand une nouvelle version est disponible, on la prend immédiatement
+        reg.addEventListener("updatefound", () => {
+          const sw = reg.installing;
+          sw.addEventListener("statechange", () => {
+            if (sw.state === "installed" && navigator.serviceWorker.controller) {
+              // Nouvelle version prête — recharge silencieuse
+              navigator.serviceWorker.addEventListener("controllerchange", () => location.reload());
+              sw.postMessage({ type: "SKIP_WAITING" });
+            }
+          });
+        });
+      });
+  }
+</script>
 </body>
 </html>
