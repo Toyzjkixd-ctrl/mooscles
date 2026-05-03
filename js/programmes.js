@@ -110,25 +110,68 @@ export async function checkShareHash() {
   } catch (e) {}
 }
 
+// ── SYNC DOM → TABLEAU (lit les inputs avant tout re-render) ──────────────────
+function _syncBuilderFromDOM(containerId, blocks) {
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  blocks.forEach((b, bi) => {
+    const exoBlock = c.children[bi];
+    if (!exoBlock) return;
+    const sel = exoBlock.querySelector('select');
+    if (sel) b.exercise = sel.value;
+    b.sets.forEach((s, si) => {
+      const inputs = exoBlock.querySelectorAll('tbody tr:nth-child(' + (si + 1) + ') input[type=number]');
+      if (inputs[0]) s.weight = +inputs[0].value;
+      if (inputs[1]) s.reps  = +inputs[1].value;
+    });
+  });
+}
+
+function _syncActiveSessionFromDOM() {
+  if (!activeSession) return;
+  const c = document.getElementById('active-session-blocks');
+  if (!c) return;
+  activeSession.blocks.forEach((b, bi) => {
+    const exoBlock = c.children[bi];
+    if (!exoBlock) return;
+    b.sets.forEach((s, si) => {
+      const inputs = exoBlock.querySelectorAll('tbody tr:nth-child(' + (si + 1) + ') input[type=number]');
+      if (inputs[0]) s.weight = +inputs[0].value;
+      if (inputs[1]) s.reps  = +inputs[1].value;
+    });
+  });
+}
+
 // ── BUILDER (nouveau programme) ───────────────────────────────────────────────
 export function addBuilderBlock() {
+  _syncBuilderFromDOM('builder-blocks', builderBlocks);
   builderBlocks.push({ exercise: DEF_EX[0], sets: [{ weight: 60, reps: 10 }, { weight: 60, reps: 10 }, { weight: 60, reps: 10 }] });
   renderBuilderBlocks();
 }
 
 export function renderBuilderBlocks() {
-  _renderBuilderInto('builder-blocks', builderBlocks, 'builderBlocks');
+  _renderBuilderInto('builder-blocks', builderBlocks, false);
 }
 
-export function builderRemoveBlock(bi) { builderBlocks.splice(bi, 1); renderBuilderBlocks(); }
+export function builderRemoveBlock(bi) {
+  _syncBuilderFromDOM('builder-blocks', builderBlocks);
+  builderBlocks.splice(bi, 1);
+  renderBuilderBlocks();
+}
 export function builderAddSet(bi) {
+  _syncBuilderFromDOM('builder-blocks', builderBlocks);
   const last = builderBlocks[bi].sets[builderBlocks[bi].sets.length - 1];
   builderBlocks[bi].sets.push({ weight: last ? last.weight : 60, reps: last ? last.reps : 10 });
   renderBuilderBlocks();
 }
-export function builderRemoveSet(bi, si) { builderBlocks[bi].sets.splice(si, 1); renderBuilderBlocks(); }
+export function builderRemoveSet(bi, si) {
+  _syncBuilderFromDOM('builder-blocks', builderBlocks);
+  builderBlocks[bi].sets.splice(si, 1);
+  renderBuilderBlocks();
+}
 
 export async function saveNewProgramme() {
+  _syncBuilderFromDOM('builder-blocks', builderBlocks);
   const name = document.getElementById('new-prog-name').value.trim();
   if (!name) { toast('Donne un nom au programme !', true); return; }
   if (!builderBlocks.length) { toast('Ajoute au moins un exercice !', true); return; }
@@ -170,22 +213,33 @@ export function closeEditProgModal() {
 }
 
 function renderEditBuilderBlocks() {
-  _renderBuilderInto('edit-builder-blocks', editBuilderBlocks, 'editBuilderBlocks');
+  _renderBuilderInto('edit-builder-blocks', editBuilderBlocks, true);
 }
 
 export function addEditBuilderBlock() {
+  _syncBuilderFromDOM('edit-builder-blocks', editBuilderBlocks);
   editBuilderBlocks.push({ exercise: DEF_EX[0], sets: [{ weight: 60, reps: 10 }, { weight: 60, reps: 10 }, { weight: 60, reps: 10 }] });
   renderEditBuilderBlocks();
 }
-export function editBuilderRemoveBlock(bi) { editBuilderBlocks.splice(bi, 1); renderEditBuilderBlocks(); }
+export function editBuilderRemoveBlock(bi) {
+  _syncBuilderFromDOM('edit-builder-blocks', editBuilderBlocks);
+  editBuilderBlocks.splice(bi, 1);
+  renderEditBuilderBlocks();
+}
 export function editBuilderAddSet(bi) {
+  _syncBuilderFromDOM('edit-builder-blocks', editBuilderBlocks);
   const last = editBuilderBlocks[bi].sets[editBuilderBlocks[bi].sets.length - 1];
   editBuilderBlocks[bi].sets.push({ weight: last ? last.weight : 60, reps: last ? last.reps : 10 });
   renderEditBuilderBlocks();
 }
-export function editBuilderRemoveSet(bi, si) { editBuilderBlocks[bi].sets.splice(si, 1); renderEditBuilderBlocks(); }
+export function editBuilderRemoveSet(bi, si) {
+  _syncBuilderFromDOM('edit-builder-blocks', editBuilderBlocks);
+  editBuilderBlocks[bi].sets.splice(si, 1);
+  renderEditBuilderBlocks();
+}
 
 export async function saveEditProgramme() {
+  _syncBuilderFromDOM('edit-builder-blocks', editBuilderBlocks);
   const name = document.getElementById('edit-prog-name').value.trim();
   if (!name) { toast('Donne un nom au programme !', true); return; }
   if (!editBuilderBlocks.length) { toast('Ajoute au moins un exercice !', true); return; }
@@ -201,37 +255,76 @@ export async function saveEditProgramme() {
 }
 
 // ── SHARED BUILDER RENDERER ───────────────────────────────────────────────────
-// Used by both new-programme builder and edit modal.
-// `varName` is the JS variable name used in inline onchange handlers (still needed
-// since we can't use ES module refs in inline HTML event attributes easily).
-function _renderBuilderInto(containerId, blocks, varName) {
+// isEdit: false = builderBlocks, true = editBuilderBlocks
+function _renderBuilderInto(containerId, blocks, isEdit) {
   const c = document.getElementById(containerId); c.innerHTML = '';
   blocks.forEach((b, bi) => {
     const div = document.createElement('div'); div.className = 'builder-exo-block';
-    const setsHTML = b.sets.map((s, si) => `
-      <tr><td>S${si + 1}</td>
-        <td><input type="number" value="${s.weight}" min="0" step="0.5" inputmode="decimal"
-          onchange="(v=>import('./js/programmes.js').then(m=>{m.${varName}[${bi}].sets[${si}].weight=+v}))(this.value)"></td>
-        <td><input type="number" value="${s.reps}" min="1" step="1" inputmode="numeric"
-          onchange="(v=>import('./js/programmes.js').then(m=>{m.${varName}[${bi}].sets[${si}].reps=+v}))(this.value)"></td>
-        <td><button class="prog-del-btn" style="font-size:13px"
-          onclick="import('./js/programmes.js').then(m=>m.${varName === 'builderBlocks' ? 'builderRemoveSet' : 'editBuilderRemoveSet'}(${bi},${si}))">✕</button></td>
-      </tr>`).join('');
-    const exoOptions = exercises.map(ex => `<option value="${ex}" ${b.exercise === ex ? 'selected' : ''}>${ex}</option>`).join('');
-    const addSetFn = varName === 'builderBlocks' ? 'builderAddSet' : 'editBuilderAddSet';
-    const removeBlockFn = varName === 'builderBlocks' ? 'builderRemoveBlock' : 'editBuilderRemoveBlock';
-    div.innerHTML = `
-      <div class="builder-exo-header">
-        <select style="background:var(--bg2);border:0.5px solid var(--border2);color:var(--text);font-size:13px;padding:6px 10px;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;flex:1"
-          onchange="(v=>import('./js/programmes.js').then(m=>{m.${varName}[${bi}].exercise=v}))(this.value)">${exoOptions}</select>
-        <button class="prog-del-btn" onclick="import('./js/programmes.js').then(m=>m.${removeBlockFn}(${bi}))">✕</button>
-      </div>
-      <table class="sets-table">
-        <thead><tr><th>#</th><th>Poids kg</th><th>Reps</th><th></th></tr></thead>
-        <tbody>${setsHTML}</tbody>
-      </table>
-      <button class="add-set-btn" style="margin-top:8px"
-        onclick="import('./js/programmes.js').then(m=>m.${addSetFn}(${bi}))">+ Série</button>`;
+
+    // Header avec select exercice
+    const header = document.createElement('div'); header.className = 'builder-exo-header';
+    const sel = document.createElement('select');
+    sel.style.cssText = "background:var(--bg2);border:0.5px solid var(--border2);color:var(--text);font-size:13px;padding:6px 10px;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;flex:1";
+    exercises.forEach(ex => {
+      const opt = document.createElement('option');
+      opt.value = ex; opt.textContent = ex;
+      if (ex === b.exercise) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener('change', () => { b.exercise = sel.value; });
+
+    const removeBlockBtn = document.createElement('button');
+    removeBlockBtn.className = 'prog-del-btn';
+    removeBlockBtn.textContent = '✕';
+    removeBlockBtn.addEventListener('click', () => {
+      isEdit ? editBuilderRemoveBlock(bi) : builderRemoveBlock(bi);
+    });
+
+    header.appendChild(sel); header.appendChild(removeBlockBtn);
+
+    // Table séries
+    const table = document.createElement('table'); table.className = 'sets-table';
+    table.innerHTML = '<thead><tr><th>#</th><th>Poids kg</th><th>Reps</th><th></th></tr></thead>';
+    const tbody = document.createElement('tbody');
+
+    b.sets.forEach((s, si) => {
+      const tr = document.createElement('tr');
+
+      const tdNum = document.createElement('td'); tdNum.textContent = 'S' + (si + 1);
+
+      const tdWeight = document.createElement('td');
+      const inpWeight = document.createElement('input');
+      inpWeight.type = 'number'; inpWeight.value = s.weight; inpWeight.min = 0; inpWeight.step = 0.5; inpWeight.setAttribute('inputmode', 'decimal');
+      inpWeight.addEventListener('change', () => { s.weight = +inpWeight.value; });
+      tdWeight.appendChild(inpWeight);
+
+      const tdReps = document.createElement('td');
+      const inpReps = document.createElement('input');
+      inpReps.type = 'number'; inpReps.value = s.reps; inpReps.min = 1; inpReps.step = 1; inpReps.setAttribute('inputmode', 'numeric');
+      inpReps.addEventListener('change', () => { s.reps = +inpReps.value; });
+      tdReps.appendChild(inpReps);
+
+      const tdDel = document.createElement('td');
+      const delBtn = document.createElement('button');
+      delBtn.className = 'prog-del-btn'; delBtn.style.fontSize = '13px'; delBtn.textContent = '✕';
+      delBtn.addEventListener('click', () => {
+        isEdit ? editBuilderRemoveSet(bi, si) : builderRemoveSet(bi, si);
+      });
+      tdDel.appendChild(delBtn);
+
+      tr.appendChild(tdNum); tr.appendChild(tdWeight); tr.appendChild(tdReps); tr.appendChild(tdDel);
+      tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+
+    const addSetBtn = document.createElement('button');
+    addSetBtn.className = 'add-set-btn'; addSetBtn.style.marginTop = '8px'; addSetBtn.textContent = '+ Série';
+    addSetBtn.addEventListener('click', () => {
+      isEdit ? editBuilderAddSet(bi) : builderAddSet(bi);
+    });
+
+    div.appendChild(header); div.appendChild(table); div.appendChild(addSetBtn);
     c.appendChild(div);
   });
 }
@@ -258,29 +351,53 @@ export function renderActiveSession() {
   const c = document.getElementById('active-session-blocks'); c.innerHTML = '';
   activeSession.blocks.forEach((b, bi) => {
     const div = document.createElement('div'); div.className = 'session-exo-block';
-    const setsHTML = b.sets.map((s, si) => `
-      <tr><td>S${si + 1}</td>
-        <td><input type="number" value="${s.weight}" min="0" step="0.5" inputmode="decimal"
-          onchange="(v=>import('./js/programmes.js').then(m=>{m.activeSession.blocks[${bi}].sets[${si}].weight=+v}))(this.value)"></td>
-        <td><input type="number" value="${s.reps}" min="1" step="1" inputmode="numeric"
-          onchange="(v=>import('./js/programmes.js').then(m=>{m.activeSession.blocks[${bi}].sets[${si}].reps=+v}))(this.value)"></td>
-        <td><button class="check-btn${s.done ? ' done' : ''}"
-          onclick="import('./js/programmes.js').then(m=>m.toggleActiveSet(${bi},${si}))">✓</button></td>
-      </tr>`).join('');
-    div.innerHTML = `
-      <div class="session-exo-header">
-        <span class="session-exo-name">${b.exercise}</span>
-        <button class="session-exo-change" onclick="import('./js/programmes.js').then(m=>m.openChangeEx(${bi}))">Changer →</button>
-      </div>
-      <table class="sets-table">
-        <thead><tr><th>#</th><th>Poids kg</th><th>Reps</th><th>✓</th></tr></thead>
-        <tbody>${setsHTML}</tbody>
-      </table>`;
+
+    const header = document.createElement('div'); header.className = 'session-exo-header';
+    const nameSpan = document.createElement('span'); nameSpan.className = 'session-exo-name'; nameSpan.textContent = b.exercise;
+    const changeBtn = document.createElement('button'); changeBtn.className = 'session-exo-change'; changeBtn.textContent = 'Changer →';
+    changeBtn.addEventListener('click', () => openChangeEx(bi));
+    header.appendChild(nameSpan); header.appendChild(changeBtn);
+
+    const table = document.createElement('table'); table.className = 'sets-table';
+    table.innerHTML = '<thead><tr><th>#</th><th>Poids kg</th><th>Reps</th><th>✓</th></tr></thead>';
+    const tbody = document.createElement('tbody');
+
+    b.sets.forEach((s, si) => {
+      const tr = document.createElement('tr');
+
+      const tdNum = document.createElement('td'); tdNum.textContent = 'S' + (si + 1);
+
+      const tdWeight = document.createElement('td');
+      const inpWeight = document.createElement('input');
+      inpWeight.type = 'number'; inpWeight.value = s.weight; inpWeight.min = 0; inpWeight.step = 0.5; inpWeight.setAttribute('inputmode', 'decimal');
+      inpWeight.addEventListener('change', () => { s.weight = +inpWeight.value; });
+      tdWeight.appendChild(inpWeight);
+
+      const tdReps = document.createElement('td');
+      const inpReps = document.createElement('input');
+      inpReps.type = 'number'; inpReps.value = s.reps; inpReps.min = 1; inpReps.step = 1; inpReps.setAttribute('inputmode', 'numeric');
+      inpReps.addEventListener('change', () => { s.reps = +inpReps.value; });
+      tdReps.appendChild(inpReps);
+
+      const tdCheck = document.createElement('td');
+      const checkBtn = document.createElement('button');
+      checkBtn.className = 'check-btn' + (s.done ? ' done' : '');
+      checkBtn.textContent = '✓';
+      checkBtn.addEventListener('click', () => toggleActiveSet(bi, si));
+      tdCheck.appendChild(checkBtn);
+
+      tr.appendChild(tdNum); tr.appendChild(tdWeight); tr.appendChild(tdReps); tr.appendChild(tdCheck);
+      tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    div.appendChild(header); div.appendChild(table);
     c.appendChild(div);
   });
 }
 
 export function toggleActiveSet(bi, si) {
+  _syncActiveSessionFromDOM();
   activeSession.blocks[bi].sets[si].done = !activeSession.blocks[bi].sets[si].done;
   renderActiveSession();
 }
@@ -294,6 +411,7 @@ export function cancelActiveSession() {
 
 export async function finishActiveSession() {
   if (!activeSession) return;
+  _syncActiveSessionFromDOM();
   const allDone = activeSession.blocks.every(b => b.sets.some(s => s.done));
   if (!allDone && !confirm('Certaines séries ne sont pas cochées. Valider quand même ?')) return;
   const btn = document.getElementById('finish-active-btn');
