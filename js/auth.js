@@ -120,6 +120,7 @@ export async function loadProfile() {
 export async function logout() {
   clearSession();
   currentUsername = '';
+  document.getElementById('profil-modal')?.classList.remove('open');
   showAuthScreen();
 }
 
