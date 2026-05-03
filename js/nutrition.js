@@ -239,12 +239,7 @@ export async function deleteEntry(id) {
 export async function saveGoals(g) {
   goals = g;
   try {
-    const { currentUsername } = await import('./auth.js');
-    await sbUpsert('profiles', { 
-      id: _session.user.id, 
-      username: currentUsername,
-      nutrition_goals: g 
-    }, 'id');
+    await sbPatch('profiles', 'id=eq.' + _session.user.id, { nutrition_goals: g });
   } catch (e) {
     console.error('saveGoals FAIL', e);
   }
