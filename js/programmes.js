@@ -471,10 +471,11 @@ export async function finishActiveSession() {
   const btn = document.getElementById('finish-active-btn');
   btn.disabled = true; btn.textContent = 'Enregistrement...';
   try {
+    const groupId = crypto.randomUUID();
     await Promise.all(blocksToSave.map(b => {
       const vol = b.sets.reduce((a, s) => a + s.weight * s.reps, 0);
       const best = Math.max(...b.sets.map(s => s.weight));
-      return sbInsert('sessions', { user_id: _session.user.id, exercise: b.exercise, sets: b.sets, volume: vol, best_weight: best });
+      return sbInsert('sessions', { user_id: _session.user.id, exercise: b.exercise, sets: b.sets, volume: vol, best_weight: best, session_group_id: groupId });
     }));
 
     // ── Sauvegarder les perfs réelles (toutes les séries, cochées ou pas) ──────
