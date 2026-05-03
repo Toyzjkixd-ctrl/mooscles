@@ -239,8 +239,11 @@ export async function deleteEntry(id) {
 export async function saveGoals(g) {
   goals = g;
   try {
-    await sbUpsert('profiles', { id: _session.user.id, nutrition_goals: g }, 'id');
-  } catch (e) {}
+    const result = await sbUpsert('profiles', { id: _session.user.id, nutrition_goals: g }, 'id');
+    console.log('saveGoals OK', result);
+  } catch (e) {
+    console.error('saveGoals FAIL', e);
+  }
   activeTab = 'journal';
   renderNutrition();
   toast('Objectifs sauvegardés ✓');
