@@ -294,27 +294,10 @@
     .toggle-switch input:checked ~ .toggle-track{background:var(--accent);}
     .toggle-switch input:checked ~ .toggle-thumb{transform:translateX(22px);background:#fff;}
 
-    /* ── SPOTIFY WIDGET ──────────────────────────────────────────────── */
-    .sp-bar{flex-shrink:0;background:var(--bg2);border-top:0.5px solid var(--border);}
-    .sp-wrap{padding:8px 14px 10px;display:flex;flex-direction:column;gap:8px;}
-    .sp-main-row{display:flex;align-items:center;gap:8px;}
-    .sp-icon{width:26px;height:26px;border-radius:50%;background:rgba(29,185,84,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-    .sp-label{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
-    .sp-last{font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .sp-sub{font-size:10px;color:var(--text3);}
-    .sp-open-btn{font-size:12px;font-weight:600;color:#1DB954;background:rgba(29,185,84,0.10);border:0.5px solid rgba(29,185,84,0.35);border-radius:20px;padding:5px 12px;cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:'DM Sans',sans-serif;}
-    .sp-open-btn:hover{background:rgba(29,185,84,0.18);}
-    .sp-playlists{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;}
-    .sp-playlists::-webkit-scrollbar{display:none;}
-    .sp-pill{font-size:12px;padding:5px 11px;border:0.5px solid var(--border);border-radius:20px;background:transparent;color:var(--text2);cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;flex-shrink:0;transition:all 0.15s;}
-    .sp-pill:hover{border-color:#1DB954;color:#1DB954;background:rgba(29,185,84,0.08);}
-    .sp-pill-active{border-color:#1DB954 !important;color:#1DB954 !important;background:rgba(29,185,84,0.12) !important;}
-    body.vintage .sp-bar{background:#2A1A0E;border-color:#8B7355;}
-    body.vintage .sp-last{color:#F5E6C8;font-family:'Special Elite',serif;}
-    body.vintage .sp-sub{color:#8B7355;}
-    body.vintage .sp-open-btn{color:#8B1A1A;background:rgba(139,26,26,0.10);border-color:rgba(139,26,26,0.35);}
-    body.vintage .sp-pill{color:#C4A882;border-color:#8B7355;font-family:'Special Elite',serif;}
-    body.vintage .sp-pill:hover,body.vintage .sp-pill-active{border-color:#8B1A1A !important;color:#8B1A1A !important;background:rgba(139,26,26,0.12) !important;}
+    /* ── SPOTIFY ── */
+    .sp-btn-open{display:flex;align-items:center;gap:6px;width:100%;padding:9px 16px;background:transparent;border:none;border-top:0.5px solid var(--border);color:var(--text3);font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;text-align:left;}
+    .sp-btn-open:hover{color:var(--text2);background:var(--bg2);}
+    body.vintage .sp-btn-open{font-family:'Special Elite',serif;border-color:#8B7355;}
   </style>
 </head>
 <body>
@@ -551,10 +534,8 @@
     <div class="loading">Chargement...</div>
   </div>
 
-  <!-- SPOTIFY PLAYER -->
-  <div id="spotify-player" class="sp-bar"></div>
-
   <!-- BOTTOM NAV -->
+  <div id="spotify-player"></div>
   <div class="bottom-nav">
     <button class="nav-item active" onclick="_mainMod.then(m=>m.showTab('seance'))" id="nav-seance"><span class="nav-icon">🏋️</span><span class="nav-label" id="nav-label-seance">Séance</span></button>
     <button class="nav-item" onclick="_mainMod.then(m=>m.showTab('historique'))" id="nav-historique"><span class="nav-icon">📋</span><span class="nav-label" id="nav-label-historique">Historique</span></button>
@@ -594,7 +575,6 @@
   import * as prog  from './js/programmes.js';
   import * as spotify from './js/spotify.js';
 
-  // Expose as resolved promises so inline onclick="..." handlers can reach them
   window._mainMod   = Promise.resolve(main);
   window._authMod   = Promise.resolve(auth);
   window._themeMod  = Promise.resolve(theme);
