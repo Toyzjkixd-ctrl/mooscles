@@ -22,9 +22,9 @@ export function renderSets() {
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>S${i + 1}</td>
       <td><input type="number" value="${s.weight}" min="0" step="0.5" inputmode="decimal"
-        onchange="import('./js/seance.js').then(m=>{m.sets[${i}].weight=+this.value;m.updateSummary();})"></td>
+        onchange="(v=>import('./js/seance.js').then(m=>{m.sets[${i}].weight=+v;m.updateSummary();}))(this.value)"></td>
       <td><input type="number" value="${s.reps}" min="1" step="1" inputmode="numeric"
-        onchange="import('./js/seance.js').then(m=>{m.sets[${i}].reps=+this.value;m.updateSummary();})"></td>
+        onchange="(v=>import('./js/seance.js').then(m=>{m.sets[${i}].reps=+v;m.updateSummary();}))(this.value)"></td>
       <td><button class="check-btn${s.done ? ' done' : ''}" onclick="import('./js/seance.js').then(m=>m.toggleSet(${i}))">✓</button></td>`;
     body.appendChild(tr);
   });

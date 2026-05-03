@@ -211,9 +211,9 @@ function _renderBuilderInto(containerId, blocks, varName) {
     const setsHTML = b.sets.map((s, si) => `
       <tr><td>S${si + 1}</td>
         <td><input type="number" value="${s.weight}" min="0" step="0.5" inputmode="decimal"
-          onchange="import('./js/programmes.js').then(m=>{m.${varName}[${bi}].sets[${si}].weight=+this.value})"></td>
+          onchange="(v=>import('./js/programmes.js').then(m=>{m.${varName}[${bi}].sets[${si}].weight=+v}))(this.value)"></td>
         <td><input type="number" value="${s.reps}" min="1" step="1" inputmode="numeric"
-          onchange="import('./js/programmes.js').then(m=>{m.${varName}[${bi}].sets[${si}].reps=+this.value})"></td>
+          onchange="(v=>import('./js/programmes.js').then(m=>{m.${varName}[${bi}].sets[${si}].reps=+v}))(this.value)"></td>
         <td><button class="prog-del-btn" style="font-size:13px"
           onclick="import('./js/programmes.js').then(m=>m.${varName === 'builderBlocks' ? 'builderRemoveSet' : 'editBuilderRemoveSet'}(${bi},${si}))">✕</button></td>
       </tr>`).join('');
@@ -223,7 +223,7 @@ function _renderBuilderInto(containerId, blocks, varName) {
     div.innerHTML = `
       <div class="builder-exo-header">
         <select style="background:var(--bg2);border:0.5px solid var(--border2);color:var(--text);font-size:13px;padding:6px 10px;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;flex:1"
-          onchange="import('./js/programmes.js').then(m=>{m.${varName}[${bi}].exercise=this.value})">${exoOptions}</select>
+          onchange="(v=>import('./js/programmes.js').then(m=>{m.${varName}[${bi}].exercise=v}))(this.value)">${exoOptions}</select>
         <button class="prog-del-btn" onclick="import('./js/programmes.js').then(m=>m.${removeBlockFn}(${bi}))">✕</button>
       </div>
       <table class="sets-table">
@@ -261,9 +261,9 @@ export function renderActiveSession() {
     const setsHTML = b.sets.map((s, si) => `
       <tr><td>S${si + 1}</td>
         <td><input type="number" value="${s.weight}" min="0" step="0.5" inputmode="decimal"
-          onchange="import('./js/programmes.js').then(m=>{m.activeSession.blocks[${bi}].sets[${si}].weight=+this.value;m.renderActiveSession()})"></td>
+          onchange="(v=>import('./js/programmes.js').then(m=>{m.activeSession.blocks[${bi}].sets[${si}].weight=+v}))(this.value)"></td>
         <td><input type="number" value="${s.reps}" min="1" step="1" inputmode="numeric"
-          onchange="import('./js/programmes.js').then(m=>{m.activeSession.blocks[${bi}].sets[${si}].reps=+this.value;m.renderActiveSession()})"></td>
+          onchange="(v=>import('./js/programmes.js').then(m=>{m.activeSession.blocks[${bi}].sets[${si}].reps=+v}))(this.value)"></td>
         <td><button class="check-btn${s.done ? ' done' : ''}"
           onclick="import('./js/programmes.js').then(m=>m.toggleActiveSet(${bi},${si}))">✓</button></td>
       </tr>`).join('');
