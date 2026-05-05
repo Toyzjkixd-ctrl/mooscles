@@ -88,6 +88,29 @@ export async function shareProgramme(id, e) {
   } catch (e) { toast('Erreur partage : ' + e.message, true); }
 }
 
+// ── IMPORT ────────────────────────────────────────────────────────────────────
+export function openImportByLink() {
+  const raw = prompt('Colle le lien de partage ou l\'ID du programme :');
+  if (!raw) return;
+  const match = raw.match(/(?:#import=)?([a-f0-9-]{36})/i);
+  if (!match) { toast('Lien invalide ❌', true); return; }
+  _importById(match[1]);
+}
+
+async function _importById(id) {
+  try {
+    const d = await sbSelect('shared_programmes', 'id=eq.' + id);
+    if (!d || !d[0]) { toast('Programme introuvable', true); return; }
+    _pendingImport = d[0];
+    const preview = document.getElementById('import-prog-preview');
+    const exoList = d[0].blocks.map(b =>
+      `<div class="prog-exo-item" style="margin:4px 0"><div class="prog-exo-dot"></div>${b.exercise} — ${b.sets.length} série${b.sets.length > 1 ? 's' : ''}</div>`
+    ).join('');
+    preview.innerHTML = `<div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px">${d[0].name}</div>${exoList}`;
+    document.getElementById('import-prog-modal').classList.remove('hidden');
+  } catch (e) { toast('Erreur : ' + e.message, true); }
+}
+
 export function closeImportModal() {
   document.getElementById('import-prog-modal').classList.add('hidden');
   _pendingImport = null;
@@ -112,18 +135,7 @@ export async function confirmImport() {
 export async function checkShareHash() {
   const hash = location.hash;
   if (!hash.startsWith('#import=')) return;
-  const shortId = hash.slice(8);
-  try {
-    const d = await sbSelect('shared_programmes', 'id=eq.' + shortId);
-    if (!d || !d[0]) return;
-    _pendingImport = d[0];
-    const preview = document.getElementById('import-prog-preview');
-    const exoList = d[0].blocks.map(b =>
-      `<div class="prog-exo-item" style="margin:4px 0"><div class="prog-exo-dot"></div>${b.exercise} — ${b.sets.length} série${b.sets.length > 1 ? 's' : ''}</div>`
-    ).join('');
-    preview.innerHTML = `<div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px">${d[0].name}</div>${exoList}`;
-    document.getElementById('import-prog-modal').classList.remove('hidden');
-  } catch (e) {}
+  await _importById(hash.slice(8));
 }
 
 // ── SYNC DOM → TABLEAU ────────────────────────────────────────────────────────
