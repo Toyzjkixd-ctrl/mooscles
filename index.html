@@ -294,11 +294,6 @@
     .toggle-switch input:checked ~ .toggle-track{background:var(--accent);}
     .toggle-switch input:checked ~ .toggle-thumb{transform:translateX(22px);background:#fff;}
 
-    /* ── SPOTIFY ── */
-    .sp-btn-open{display:flex;align-items:center;gap:6px;width:100%;padding:9px 16px;background:transparent;border:none;border-top:0.5px solid var(--border);color:var(--text3);font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;text-align:left;}
-    .sp-btn-open:hover{color:var(--text2);background:var(--bg2);}
-    body.vintage .sp-btn-open{font-family:'Special Elite',serif;border-color:#8B7355;}
-
     /* ── GRAPH ── */
     .graph-metric-btn,.graph-period-btn{font-size:11px;padding:4px 10px;border:0.5px solid var(--border);border-radius:20px;background:transparent;color:var(--text3);cursor:pointer;font-family:'DM Mono',monospace;transition:all 0.15s;}
     .graph-metric-btn.active,.graph-period-btn.active{background:var(--accent-dim);color:var(--accent);border-color:rgba(200,241,53,0.3);}
@@ -541,7 +536,6 @@
   </div>
 
   <!-- BOTTOM NAV -->
-  <div id="spotify-player"></div>
   <div class="bottom-nav">
     <button class="nav-item active" onclick="_mainMod.then(m=>m.showTab('seance'))" id="nav-seance"><span class="nav-icon">🏋️</span><span class="nav-label" id="nav-label-seance">Séance</span></button>
     <button class="nav-item" onclick="_mainMod.then(m=>m.showTab('historique'))" id="nav-historique"><span class="nav-icon">📋</span><span class="nav-label" id="nav-label-historique">Historique</span></button>
