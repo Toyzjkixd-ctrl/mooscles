@@ -92,9 +92,21 @@ export async function shareProgramme(id, e) {
 export function openImportByLink() {
   const raw = prompt('Colle le lien de partage ou l\'ID du programme :');
   if (!raw) return;
-  const match = raw.match(/(?:#import=)?([a-f0-9-]{36})/i);
-  if (!match) { toast('Lien invalide ❌', true); return; }
-  _importById(match[1]);
+  
+  // Essaie d'extraire après #import=
+  let id = null;
+  const hashMatch = raw.match(/#import=([^&\s]+)/);
+  if (hashMatch) {
+    id = hashMatch[1];
+  } else {
+    // Sinon prend le dernier segment qui ressemble à un UUID
+    const uuidMatch = raw.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+    if (uuidMatch) id = uuidMatch[0];
+    else id = raw.trim(); // tente avec ce qui a été collé brut
+  }
+  
+  if (!id) { toast('Lien invalide ❌', true); return; }
+  _importById(id);
 }
 
 async function _importById(id) {
