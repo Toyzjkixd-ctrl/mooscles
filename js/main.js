@@ -60,7 +60,6 @@ export async function initApp() {
   // Pre-load nutrition in background
   loadNutrition();
   checkShareHash();
-  import('./spotify.js').then(m => m.initSpotify());
 }
 
 // ── BOOT ──────────────────────────────────────────────────────────────────────
