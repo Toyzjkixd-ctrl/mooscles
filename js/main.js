@@ -23,6 +23,10 @@ export function showTab(t) {
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   document.getElementById('tab-' + t).classList.remove('hidden');
   document.getElementById('nav-' + t).classList.add('active');
+  if (t === 'seance') {
+    // Recharge la liste des exos pour voir ceux créés par les autres
+    import('./exercises.js').then(m => m.loadExercises().then(() => m.renderExGrid()));
+  }
   if (t === 'historique') renderHistory();
   if (t === 'records') renderRecords();
   if (t === 'nutrition') renderNutrition();
@@ -38,6 +42,7 @@ export function showTab(t) {
     }
   }
 }
+
 
 // ── APP INIT ──────────────────────────────────────────────────────────────────
 export async function initApp() {
