@@ -15,6 +15,22 @@ let changingExIdx = null;
 let modalSelectedEx = '';
 let _pendingImport = null;
 
+// ── DRAFT (localStorage) ──────────────────────────────────────────────────────
+const DRAFT_KEY = 'active_session_draft';
+
+function saveDraft() {
+  if (!activeSession) return;
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(activeSession)); } catch (e) {}
+}
+
+function loadDraft() {
+  try { return JSON.parse(localStorage.getItem(DRAFT_KEY)); } catch (e) { return null; }
+}
+
+function clearDraft() {
+  try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+}
+
 // ── LOAD & RENDER LIST ────────────────────────────────────────────────────────
 export async function loadProgrammes() {
   try {
@@ -110,7 +126,7 @@ export async function checkShareHash() {
   } catch (e) {}
 }
 
-// ── SYNC DOM → TABLEAU (lit les inputs avant tout re-render) ──────────────────
+// ── SYNC DOM → TABLEAU ────────────────────────────────────────────────────────
 function _syncBuilderFromDOM(containerId, blocks) {
   const c = document.getElementById(containerId);
   if (!c) return;
@@ -255,13 +271,11 @@ export async function saveEditProgramme() {
 }
 
 // ── SHARED BUILDER RENDERER ───────────────────────────────────────────────────
-// isEdit: false = builderBlocks, true = editBuilderBlocks
 function _renderBuilderInto(containerId, blocks, isEdit) {
   const c = document.getElementById(containerId); c.innerHTML = '';
   blocks.forEach((b, bi) => {
     const div = document.createElement('div'); div.className = 'builder-exo-block';
 
-    // Header avec select exercice
     const header = document.createElement('div'); header.className = 'builder-exo-header';
     const sel = document.createElement('select');
     sel.style.cssText = "background:var(--bg2);border:0.5px solid var(--border2);color:var(--text);font-size:13px;padding:6px 10px;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;flex:1";
@@ -282,7 +296,6 @@ function _renderBuilderInto(containerId, blocks, isEdit) {
 
     header.appendChild(sel); header.appendChild(removeBlockBtn);
 
-    // Table séries
     const table = document.createElement('table'); table.className = 'sets-table';
     table.innerHTML = '<thead><tr><th>#</th><th>Poids kg</th><th>Reps</th><th></th></tr></thead>';
     const tbody = document.createElement('tbody');
@@ -332,38 +345,131 @@ function _renderBuilderInto(containerId, blocks, isEdit) {
 // ── ACTIVE SESSION ────────────────────────────────────────────────────────────
 export function launchProgramme(id) {
   const p = programmes.find(x => x.id === id); if (!p) return;
-  const lastPerfs = p.last_perfs || {}; // { exercise: [{weight, reps}, ...] }
+
+  // Vérifier s'il y a un brouillon en cours pour ce programme
+  const draft = loadDraft();
+  if (draft && draft.progId === id) {
+    const doneCount = draft.blocks.reduce((a, b) => a + b.sets.filter(s => s.done).length, 0);
+    const totalCount = draft.blocks.reduce((a, b) => a + b.sets.length, 0);
+    const savedAt = draft.savedAt ? new Date(draft.savedAt) : null;
+    const timeStr = savedAt ? _formatTimeAgo(savedAt) : '';
+    _showResumeModal(draft.progName, doneCount, totalCount, timeStr,
+      // Reprendre
+      () => {
+        activeSession = draft;
+        _startActiveSession();
+      },
+      // Recommencer
+      () => {
+        clearDraft();
+        _buildFreshSession(p);
+      }
+    );
+    return;
+  }
+
+  // Vérifier s'il y a un brouillon d'un AUTRE programme en cours
+  if (draft && draft.progId !== id) {
+    const doneCount = draft.blocks.reduce((a, b) => a + b.sets.filter(s => s.done).length, 0);
+    if (doneCount > 0) {
+      if (!confirm(`Tu as une séance de "${draft.progName}" non terminée.\nLancer "${p.name}" effacera ce brouillon. Continuer ?`)) return;
+    }
+    clearDraft();
+  }
+
+  _buildFreshSession(p);
+}
+
+function _buildFreshSession(p) {
+  const lastPerfs = p.last_perfs || {};
   activeSession = {
     progId: p.id,
     progName: p.name,
+    savedAt: new Date().toISOString(),
     blocks: (p.blocks || []).map(b => {
-      const prev = lastPerfs[b.exercise]; // tableau de séries de la dernière fois
+      const prev = lastPerfs[b.exercise];
       return {
         exercise: b.exercise,
-        // Pré-remplir avec les perfs réelles de la dernière fois si dispo
         sets: b.sets.map((s, si) => ({
           weight: prev && prev[si] != null ? prev[si].weight : s.weight,
           reps:   prev && prev[si] != null ? prev[si].reps   : s.reps,
           done: false
         })),
-        // Garder les valeurs du template pour afficher "objectif"
         targetSets: b.sets.map(s => ({ weight: s.weight, reps: s.reps })),
-        // Garder les perfs précédentes pour affichage de référence
         prevSets: prev ? prev.map(s => ({ weight: s.weight, reps: s.reps })) : null,
       };
     })
   };
+  saveDraft();
+  _startActiveSession();
+}
+
+function _startActiveSession() {
   renderActiveSession();
   document.getElementById('active-session-container').style.display = 'block';
   document.getElementById('programmes-list-container').style.display = 'none';
   showTab('programmes');
 }
 
+// ── MODALE REPRISE ────────────────────────────────────────────────────────────
+function _showResumeModal(progName, done, total, timeStr, onResume, onRestart) {
+  // Créer la modale à la volée si elle n'existe pas encore
+  let modal = document.getElementById('resume-session-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'resume-session-modal';
+    modal.style.cssText = `
+      position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;
+      display:flex;align-items:center;justify-content:center;padding:20px;`;
+    modal.innerHTML = `
+      <div style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius);padding:24px;max-width:320px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.4);">
+        <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px;" id="resume-modal-title"></div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:20px;" id="resume-modal-sub"></div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button id="resume-btn-resume" style="padding:12px;background:var(--accent);color:#000;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">
+            Reprendre la séance →
+          </button>
+          <button id="resume-btn-restart" style="padding:12px;background:var(--bg3);color:var(--text2);border:0.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;">
+            Recommencer depuis le début
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+
+  document.getElementById('resume-modal-title').textContent = '📂 ' + progName;
+  document.getElementById('resume-modal-sub').textContent =
+    `Séance non terminée${timeStr ? ' · ' + timeStr : ''} · ${done}/${total} séries cochées`;
+
+  const btnResume  = document.getElementById('resume-btn-resume');
+  const btnRestart = document.getElementById('resume-btn-restart');
+
+  // Cloner pour supprimer les anciens listeners
+  const newResume  = btnResume.cloneNode(true);
+  const newRestart = btnRestart.cloneNode(true);
+  btnResume.replaceWith(newResume);
+  btnRestart.replaceWith(newRestart);
+
+  newResume.addEventListener('click',  () => { modal.remove(); onResume(); });
+  newRestart.addEventListener('click', () => { modal.remove(); onRestart(); });
+
+  modal.style.display = 'flex';
+}
+
+function _formatTimeAgo(date) {
+  const diff = Math.floor((Date.now() - date.getTime()) / 60000);
+  if (diff < 1)  return 'à l\'instant';
+  if (diff < 60) return 'il y a ' + diff + ' min';
+  const h = Math.floor(diff / 60);
+  return 'il y a ' + h + 'h' + (diff % 60 ? (diff % 60) + 'min' : '');
+}
+
+// ── RENDER SESSION ACTIVE ─────────────────────────────────────────────────────
 export function renderActiveSession() {
   if (!activeSession) return;
   document.getElementById('active-session-name').textContent = '📂 ' + activeSession.progName;
   const total = activeSession.blocks.reduce((a, b) => a + b.sets.length, 0);
-  const done = activeSession.blocks.reduce((a, b) => a + b.sets.filter(s => s.done).length, 0);
+  const done  = activeSession.blocks.reduce((a, b) => a + b.sets.filter(s => s.done).length, 0);
   document.getElementById('active-session-progress').textContent = `${done}/${total} séries complétées`;
   const c = document.getElementById('active-session-blocks'); c.innerHTML = '';
   activeSession.blocks.forEach((b, bi) => {
@@ -392,14 +498,12 @@ export function renderActiveSession() {
       const tdWeight = document.createElement('td');
       const inpWeight = document.createElement('input');
       inpWeight.type = 'number'; inpWeight.value = s.weight; inpWeight.min = 0; inpWeight.step = 0.5; inpWeight.setAttribute('inputmode', 'decimal');
-      inpWeight.addEventListener('change', () => { s.weight = +inpWeight.value; });
-      // Hint perf précédente sous l'input poids
+      inpWeight.addEventListener('change', () => { s.weight = +inpWeight.value; saveDraft(); });
       if (prev) {
         const hint = document.createElement('div');
         hint.textContent = prev.weight + 'kg';
-        hint.style.cssText = 'font-size:10px;color:var(--text3);text-align:center;margin-top:2px;font-family:\'DM Mono\',monospace;';
-        tdWeight.appendChild(inpWeight);
-        tdWeight.appendChild(hint);
+        hint.style.cssText = "font-size:10px;color:var(--text3);text-align:center;margin-top:2px;font-family:'DM Mono',monospace;";
+        tdWeight.appendChild(inpWeight); tdWeight.appendChild(hint);
       } else {
         tdWeight.appendChild(inpWeight);
       }
@@ -407,13 +511,12 @@ export function renderActiveSession() {
       const tdReps = document.createElement('td');
       const inpReps = document.createElement('input');
       inpReps.type = 'number'; inpReps.value = s.reps; inpReps.min = 1; inpReps.step = 1; inpReps.setAttribute('inputmode', 'numeric');
-      inpReps.addEventListener('change', () => { s.reps = +inpReps.value; });
+      inpReps.addEventListener('change', () => { s.reps = +inpReps.value; saveDraft(); });
       if (prev) {
         const hint = document.createElement('div');
         hint.textContent = prev.reps + ' reps';
-        hint.style.cssText = 'font-size:10px;color:var(--text3);text-align:center;margin-top:2px;font-family:\'DM Mono\',monospace;';
-        tdReps.appendChild(inpReps);
-        tdReps.appendChild(hint);
+        hint.style.cssText = "font-size:10px;color:var(--text3);text-align:center;margin-top:2px;font-family:'DM Mono',monospace;";
+        tdReps.appendChild(inpReps); tdReps.appendChild(hint);
       } else {
         tdReps.appendChild(inpReps);
       }
@@ -438,11 +541,14 @@ export function renderActiveSession() {
 export function toggleActiveSet(bi, si) {
   _syncActiveSessionFromDOM();
   activeSession.blocks[bi].sets[si].done = !activeSession.blocks[bi].sets[si].done;
+  activeSession.savedAt = new Date().toISOString();
+  saveDraft(); // ← sauvegarde à chaque check
   renderActiveSession();
 }
 
 export function cancelActiveSession() {
   if (!confirm('Annuler la séance en cours ?')) return;
+  clearDraft();
   activeSession = null;
   document.getElementById('active-session-container').style.display = 'none';
   document.getElementById('programmes-list-container').style.display = 'block';
@@ -452,7 +558,6 @@ export async function finishActiveSession() {
   if (!activeSession) return;
   _syncActiveSessionFromDOM();
 
-  // Construire les blocs à enregistrer : uniquement les séries cochées
   const blocksToSave = activeSession.blocks
     .map(b => ({ ...b, sets: b.sets.filter(s => s.done) }))
     .filter(b => b.sets.length > 0);
@@ -478,22 +583,20 @@ export async function finishActiveSession() {
       return sbInsert('sessions', { user_id: _session.user.id, exercise: b.exercise, sets: b.sets, volume: vol, best_weight: best, session_group_id: groupId });
     }));
 
-    // ── Sauvegarder les perfs réelles (toutes les séries, cochées ou pas) ──────
-    // last_perfs = { exerciceName: [{weight, reps}, ...] }
     const lastPerfs = {};
     activeSession.blocks.forEach(b => {
       lastPerfs[b.exercise] = b.sets.map(s => ({ weight: s.weight, reps: s.reps }));
     });
-    // Mettre à jour le programme en DB (best-effort, pas bloquant)
     try {
       const progIdx = programmes.findIndex(p => p.id === activeSession.progId);
       if (progIdx >= 0) {
         const updated = await sbPatch('programmes', 'id=eq.' + activeSession.progId, { last_perfs: lastPerfs });
         if (updated && updated[0]) programmes[progIdx] = updated[0];
-        else programmes[progIdx].last_perfs = lastPerfs; // fallback local
+        else programmes[progIdx].last_perfs = lastPerfs;
       }
     } catch (e) { /* non-bloquant */ }
 
+    clearDraft(); // ← on efface le brouillon après validation réussie
     activeSession = null;
     document.getElementById('active-session-container').style.display = 'none';
     document.getElementById('programmes-list-container').style.display = 'block';
@@ -529,6 +632,7 @@ export function confirmChangeEx() {
   if (!newEx) { closeExModal(); return; }
   if (custom && !exercises.includes(custom)) exercises.push(custom);
   activeSession.blocks[changingExIdx].exercise = newEx;
+  saveDraft();
   closeExModal();
   renderActiveSession();
 }
