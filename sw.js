@@ -1,5 +1,5 @@
 // ── SERVICE WORKER — Network First ───────────────────────────────────────────
-const CACHE = 'mooscles-v1.1.7';
+const CACHE = 'mooscles-v1.1.8';
 
 // Fichiers à pré-cacher au premier install
 const PRECACHE = [
