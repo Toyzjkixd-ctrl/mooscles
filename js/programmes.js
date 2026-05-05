@@ -81,11 +81,40 @@ export async function shareProgramme(id, e) {
   if (!p) return;
   try {
     const d = await sbInsert('shared_programmes', { name: p.name, blocks: p.blocks });
-    const url = location.origin + location.pathname + '#import=' + d[0].id;
-    navigator.clipboard.writeText(url)
-      .then(() => toast('Lien copié ! 🔗'))
-      .catch(() => prompt('Copie ce lien :', url));
+    const sharedId = d[0].id;
+    const url = location.origin + location.pathname + '#import=' + sharedId;
+    _showShareModal(url, sharedId);
   } catch (e) { toast('Erreur partage : ' + e.message, true); }
+}
+
+function _showShareModal(url, id) {
+  let modal = document.getElementById('share-prog-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'share-prog-modal';
+    modal.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;`;
+    modal.innerHTML = `
+      <div style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius);padding:24px;max-width:320px;width:100%;display:flex;flex-direction:column;gap:10px;">
+        <div style="font-size:15px;font-weight:600;color:var(--text);">Partager ce programme</div>
+        <div style="font-size:12px;color:var(--text2);">Ton pote peut importer via le lien ou juste l'ID court.</div>
+        <button id="share-btn-link" class="btn-primary">🔗 Copier le lien</button>
+        <button id="share-btn-id" class="btn-primary" style="background:var(--bg3);color:var(--text);border:0.5px solid var(--border2);">📋 Copier l'ID</button>
+        <button id="share-btn-close" style="background:transparent;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:4px;">Fermer</button>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+
+  modal.style.display = 'flex';
+  modal.querySelector('#share-btn-link').onclick = () => {
+    navigator.clipboard.writeText(url).then(() => toast('Lien copié ! 🔗')).catch(() => toast(url));
+    modal.style.display = 'none';
+  };
+  modal.querySelector('#share-btn-id').onclick = () => {
+    navigator.clipboard.writeText(id).then(() => toast('ID copié ! 📋')).catch(() => toast(id));
+    modal.style.display = 'none';
+  };
+  modal.querySelector('#share-btn-close').onclick = () => { modal.style.display = 'none'; };
+  modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
 }
 
 // ── IMPORT ────────────────────────────────────────────────────────────────────
